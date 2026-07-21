@@ -6,6 +6,7 @@
     "express": "^5.2.1",
     "mongoose": "^9.7.4",
     "nodemon": "^3.1.14",
+    "resend": "^6.18.0",
     "tailwindcss": "^4.3.3"
   },
   "name": "myfirstbackendproject",
