@@ -1,6 +1,6 @@
 [build]
-  command = "npm run build"
-  publish = "dist"
+  command = "index.html"
+  publish = "."
 
 [build.environment]
   # Ensure Vite uses the correct base when deploying (optional)
