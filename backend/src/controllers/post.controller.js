@@ -3,20 +3,20 @@ import {Post} from "../models/post.model.js";
 //create a post
 const createPost = async (req, res) => {
     try {
-        const { name, description, age, portfolio } = req.body;
+        const { name, description, portfolio, author } = req.body;
 
-        if (!name || !description || !age || !portfolio) {
+        if (!name || !description || !portfolio) {
             return res.status(400).json({
-                message: "Please provide name, description, age and portfolio"
+                message: "Please provide name, description and portfolio"
             });
         }  
 
-          const post = await Post.create({
-            name,
-            description,
-            age,
-            portfolio
-          });
+                    const post = await Post.create({
+                        name,
+                        description,
+                        portfolio,
+                        author: author ?? "Unknown",
+                    });
 
             res.status(201).json({
                 message: "Post created successfully", post
@@ -73,20 +73,20 @@ const updatePost = async (req, res) => {
 
 const deletePost = async (req, res) => {
     try{
-        const deleted = await Post.findByIdAndDelete(req.params.id);
+        const post = await Post.findById(req.params.id);
+        if(!post) return res.status(404).json({ message: "Post not found" });
 
-        if(!deleted) return res.status(404).json({
-            message: "Post not found"
-        });
+        // Require the requester to provide username of the deleter
+        const { username } = req.body;
+        if (!username || post.author !== username) {
+            return res.status(403).json({ message: "You are not authorized to delete this post" });
+        }
 
-        res.status(200).json({
-            message: "Post deleted successfully"
-        });
+        await Post.findByIdAndDelete(req.params.id);
+        res.status(200).json({ message: "Post deleted successfully" });
     }catch(error){
 
-        res.status(500).json({
-            message: "Internal server error", error
-        });
+        res.status(500).json({ message: "Internal server error", error });
     }
 }
 export { createPost, getPosts, updatePost, deletePost };

@@ -102,6 +102,42 @@ const logoutUser = async (req, res) => {
     }
 }
 
+const updateUser = async (req, res) => {
+    try {
+        const { id, username, email, password } = req.body;
+
+        if (!id) {
+            return res.status(400).json({ message: "User id is required" });
+        }
+
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        if (username) user.username = username;
+        if (email) user.email = email.toLowerCase();
+        if (password) user.password = password;
+
+        if (!username && !email && !password) {
+            return res.status(400).json({ message: "Please provide data to update" });
+        }
+
+        await user.save();
+
+        res.status(200).json({
+            message: "Profile updated successfully",
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+            },
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
 const deleteUser = async (req, res) => {
     try{
         const { email } = req.body;
@@ -122,4 +158,4 @@ const deleteUser = async (req, res) => {
         });
     }
 }
-export { registerUser, loginUser, logoutUser, deleteUser };
+export { registerUser, loginUser, logoutUser, updateUser, deleteUser };

@@ -4,27 +4,42 @@ const postSchema = new Schema(
     {
        name: {
             type: String,
-            required: true,
             trim: true,
         },
 
         description: {
-            type: String,
-            required: true,
-            trim: true,
+              type: String,
+              trim: true,
         },
 
         age: {
             type: Number,
-            required: true,
-            min: 1,
-            max: 120,
+            default: 0,
         },
 
         portfolio: {
             type: String,
-            required: true,
             trim: true,
+        },
+
+        author: {
+            type: String,
+            trim: true,
+            default: "Unknown",
+        },
+
+        likes: {
+            type: Number,
+            default: 0,
+        },
+
+        comments: {
+            type: [{
+                text: { type: String, required: true, trim: true },
+                author: { type: String, trim: true, default: "Guest" },
+                createdAt: { type: Date, default: Date.now },
+            }],
+            default: [],
         },
     },
 

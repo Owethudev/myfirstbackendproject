@@ -1,3 +1,28 @@
+@keyframes conveyor {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.conveyor-track {
+  display: flex;
+  width: max-content;
+  gap: 0.75rem;
+  animation: conveyor 48s linear infinite;
+  will-change: transform;
+}
+
+.conveyor-track:hover {
+  animation-play-state: paused;
+}
+
+.conveyor-track > span {
+  flex-shrink: 0;
+}
+
 .app-shell {
   min-height: 100vh;
   padding: 24px;
@@ -133,6 +158,34 @@
   margin-bottom: 8px;
 }
 
+.post-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.comments-box {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comment-item {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 8px;
+}
+
+.comment-form {
+  display: flex;
+  gap: 8px;
+}
+
+.comment-form input {
+  flex: 1;
+}
+
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -170,6 +223,17 @@
   border-radius: 12px;
   padding: 12px;
   margin-bottom: 16px;
+}
+
+.profile-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-form {
+  margin-top: 12px;
 }
 
 @media (max-width: 768px) {
