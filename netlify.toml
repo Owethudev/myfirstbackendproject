@@ -1,5 +1,5 @@
 [build]
-  publish = "."
+  publish = "/index.html"
 
 [build.environment]
   # Ensure Vite uses the correct base when deploying (optional)
