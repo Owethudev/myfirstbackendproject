@@ -26,7 +26,7 @@ const registerUser = async (req, res) => {
             password,
             loggedIn: false
         });
-
+ 
         if (resend) {
             try {
                 const { data, error } = await resend.emails.send({
