@@ -3,18 +3,19 @@ import {Post} from "../models/post.model.js";
 //create a post
 const createPost = async (req, res) => {
     try {
-        const { name, description, age } = req.body;
+        const { name, description, age, portfolio } = req.body;
 
-        if (!name || !description || !age) {
+        if (!name || !description || !age || !portfolio) {
             return res.status(400).json({
-                message: "Please provide name, description, and age"
+                message: "Please provide name, description, age and portfolio"
             });
         }  
 
           const post = await Post.create({
             name,
             description,
-            age
+            age,
+            portfolio
           });
 
             res.status(201).json({

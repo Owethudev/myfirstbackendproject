@@ -20,6 +20,12 @@ const postSchema = new Schema(
             min: 1,
             max: 120,
         },
+
+        portfolio: {
+            type: String,
+            required: true,
+            trim: true,
+        },
     },
 
     {
