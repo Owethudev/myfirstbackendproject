@@ -1,6 +1,5 @@
 import { User } from "../models/user.model.js";
 import { resend } from "../config/resend.js";
-import { Resend } from "resend";
 
 const registerUser = async (req, res) => {
     try {
@@ -30,8 +29,8 @@ const registerUser = async (req, res) => {
 
         if (resend) {
             try {
-                await resend.emails.send({
-                    from: "SNPL PORT ",
+                const { data, error } = await resend.emails.send({
+                    from: "SNPL PORT <onboarding@resend.dev>",
                     to: user.email,
                     subject: "Welcome to SNPL PORT",
                     html: `
@@ -40,6 +39,12 @@ const registerUser = async (req, res) => {
                         <p>We are excited to have you join the community.</p>
                     `,
                 });
+
+                if (error) {
+                    throw new Error(error.message);
+                }
+
+                console.log("Welcome email sent:", data?.id);
             } catch (emailError) {
                 console.error("Welcome email could not be sent:", emailError);
             }
