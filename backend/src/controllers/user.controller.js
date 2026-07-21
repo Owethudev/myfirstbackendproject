@@ -1,5 +1,6 @@
 import { User } from "../models/user.model.js";
 import { resend } from "../config/resend.js";
+import { Resend } from "resend";
 
 const registerUser = async (req, res) => {
     try {
