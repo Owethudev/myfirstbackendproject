@@ -1,15 +1,6 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  Compass,
-  LogOut,
-  Menu,
-  RefreshCw,
-  Send,
-  Sparkles,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Compass, LogOut, Menu, Send, Sparkles, Trash2, X } from "lucide-react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./App.css";
 import { VITE_API_BASE_URL } from "./config.ts";
@@ -393,9 +384,6 @@ function AppShell() {
                 <Menu size={20} />
               </button>
             ) : null}
-            <div className="rounded-full border border-[#2D1E2F]/10 bg-[#F9B208]/20 px-3 py-2 text-sm font-medium text-[#2D1E2F]">
-              {user ? "Live feed" : "Community ready"}
-            </div>
           </div>
         </div>
       </header>
@@ -421,11 +409,7 @@ function AppShell() {
                 <br />
                 BUILD TOGETHER.
               </h2>
-              <p className="mt-4 max-w-xl text-sm leading-6 text-[#2D1E2F]/80 sm:text-base">
-                A warm, editorial home for your cohort to share polished work,
-                discover fresh ideas, and celebrate each other with the energy
-                of a real creative studio.
-              </p>
+              {/* Intro paragraph removed per request */}
 
               <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-[#2D1E2F]/10 bg-[#FFF8F0] p-4 sm:p-5">
                 <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.25em] text-[#3D5A40]">
@@ -754,17 +738,9 @@ function AppShell() {
                     Community feed
                   </p>
                   <h2 className="mt-1 font-['Bebas_Neue'] text-2xl text-[#2D1E2F]">
-                    EDITORIAL SHOWCASE
+                    SHOW US YOUR WORK
                   </h2>
                 </div>
-                <button
-                  type="button"
-                  className="flex items-center gap-2 rounded-full border border-[#2D1E2F]/10 bg-[#FFF8F0] px-3 py-2 text-sm font-semibold text-[#2D1E2F]"
-                  onClick={() => void loadPosts()}
-                >
-                  <RefreshCw size={16} />
-                  Refresh
-                </button>
               </div>
 
               {posts.length === 0 ? (
@@ -836,7 +812,7 @@ function AppShell() {
                         rel="noreferrer"
                         className="inline-flex items-center text-sm font-semibold text-[#3D5A40] underline-offset-4 hover:underline"
                       >
-                        Open portfolio by {post.author ?? "Creator"} →
+                        View project / portfolio
                       </a>
 
                       <div className="flex items-center justify-between gap-2 border-t border-[#2D1E2F]/10 pt-4">
