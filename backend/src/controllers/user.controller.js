@@ -1,4 +1,5 @@
 import { User } from "../models/user.model.js";
+import { resend } from "../config/resend.js";
 
 const registerUser = async (req, res) => {
     try {
@@ -25,6 +26,21 @@ const registerUser = async (req, res) => {
             password,
             loggedIn: false
         });
+
+
+        // Send welcome email using Resend
+         await resend.emails.send({
+         from: "SNPLBUDS ",
+         to: user.email,
+         subject: "Welcome to SNPLBUDS!",
+         html: `
+         <h1>Welcome ${user.username} 👋</h1>
+
+         <p>Your account has been created successfully.</p>
+
+         <p>We're excited to have you join the community!</p>
+         `
+         });
 
         res.status(201).json({
             success: true,
