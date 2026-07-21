@@ -29,14 +29,18 @@ const registerUser = async (req, res) => {
 
 
         // Send the welcome email when Resend is configured.
-        if (resend) {
-            await resend.emails.send({
-                from: "onboarding@resend.dev",
-                to: "jezileowethu@gmail.com",
-                subject: "Hello World",
-                html: "<p>Congrats on sending your <strong>first email</strong>!</p>",
-            });
-        }
+         await resend.emails.send({
+         from: "SNPLBUDS <onboarding@yourdomain.com>",
+         to: user.email,
+          subject: "Welcome to SNPLBUDS!",
+          html: `
+         <h1>Welcome ${user.username} 👋</h1>
+
+         <p>Your account has been created successfully.</p>
+
+         <p>We're excited to have you join the community!</p>
+         `
+         });
 
         res.status(201).json({
             success: true,
