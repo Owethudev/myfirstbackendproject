@@ -1,5 +1,6 @@
 [build]
-  publish = "/index.html"
+  command = "cd frontend/myfullstack && npm run build"
+  publish = "frontend/myfullstack/dist"
 
 [build.environment]
   # Ensure Vite uses the correct base when deploying (optional)
