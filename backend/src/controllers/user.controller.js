@@ -27,20 +27,22 @@ const registerUser = async (req, res) => {
             loggedIn: false
         });
 
-
-        // Send the welcome email when Resend is configured.
-         await resend.emails.send({
-         from: "SNPLBUDS <onboarding@yourdomain.com>",
-         to: user.email,
-          subject: "Welcome to SNPLBUDS!",
-          html: `
-         <h1>Welcome ${user.username} 👋</h1>
-
-         <p>Your account has been created successfully.</p>
-
-         <p>We're excited to have you join the community!</p>
-         `
-         });
+        if (resend) {
+            try {
+                await resend.emails.send({
+                    from: "SNPL PORT ",
+                    to: user.email,
+                    subject: "Welcome to SNPL PORT",
+                    html: `
+                        <h1>Welcome to SNPL PORT, ${user.username}!</h1>
+                        <p>Your account has been created successfully.</p>
+                        <p>We are excited to have you join the community.</p>
+                    `,
+                });
+            } catch (emailError) {
+                console.error("Welcome email could not be sent:", emailError);
+            }
+        }
 
         res.status(201).json({
             success: true,
