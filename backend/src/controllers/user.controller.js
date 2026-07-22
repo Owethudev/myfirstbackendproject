@@ -1,130 +1,154 @@
+import crypto from "crypto";
 import { User } from "../models/user.model.js";
-import { resend } from "../config/resend.js";
+import transporter from "../config/email.js";
 
 const registerUser = async (req, res) => {
     try {
         const { username, email, password } = req.body;
 
-        // The server checks that the request has the needed information.
         if (!username || !email || !password) {
             return res.status(400).json({
                 message: "Please provide username, email, and password"
             });
         }
-        // The server looks for an account with this email first.
-        const existing = await User.findOne({ email: email.toLowerCase() });
+
+        const normalizedEmail = email.toLowerCase();
+        const existing = await User.findOne({ email: normalizedEmail });
         if (existing) {
             return res.status(400).json({
                 message: "User already exists"
             });
         }
 
-        // A new account is made after the checks pass.
+        const verificationToken = crypto.randomBytes(32).toString("hex");
         const user = await User.create({
             username,
-            email: email.toLowerCase(),
+            email: normalizedEmail,
             password,
-            loggedIn: false
+            loggedIn: false,
+            verified: false,
+            verificationToken,
         });
- 
-        if (resend) {
-            try {
-                const { data, error } = await resend.emails.send({
-                    from: "SNPL PORT <onboarding@resend.dev>",
-                    to: user.email,
-                    subject: "Welcome to SNPL PORT",
-                    html: `
-                        <h1>Welcome to SNPL PORT, ${user.username}!</h1>
-                        <p>Your account has been created successfully.</p>
-                        <p>We are excited to have you join the community.</p>
-                    `,
-                });
 
-                if (error) {
-                    throw new Error(error.message);
-                }
+        const baseUrl = process.env.BACKEND_URL || process.env.VITE_API_BASE_URL || "http://localhost:8000";
+        const verificationUrl = `${baseUrl}/api/v1/users/verify/${verificationToken}`;
 
-                console.log("Welcome email sent:", data?.id);
-            } catch (emailError) {
-                console.error("Welcome email could not be sent:", emailError);
-            }
+        try {
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: user.email,
+                subject: "Verify your SNPL PORT account",
+                html: `
+                    <h1>Welcome to SNPL PORT, ${user.username}!</h1>
+                    <p>Please verify your account by clicking the link below:</p>
+                    <p><a href="${verificationUrl}">Verify your email</a></p>
+                `,
+            });
+        } catch (emailError) {
+            console.error("Verification email could not be sent:", emailError);
         }
 
         res.status(201).json({
             success: true,
-            message: "User registered successfully",
+            message: "User registered successfully. Please verify your email before logging in.",
             user: {
                 id: user._id,
                 username: user.username,
                 email: user.email
             }
         });
-
-        
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: "Internal server error",error: error.message
+            message: "Internal server error",
+            error: error.message
         });
-        
+    }
+};
+
+const verifyUser = async (req, res) => {
+    try {
+        const { token } = req.params;
+
+        if (!token) {
+            return res.status(400).json({ message: "Verification token is required" });
+        }
+
+        const user = await User.findOne({ verificationToken: token });
+        if (!user) {
+            return res.status(400).json({ message: "Invalid or expired verification token" });
+        }
+
+        user.verified = true;
+        user.verificationToken = undefined;
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Email verified successfully"
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
     }
 };
 
 const loginUser = async (req, res) => {
-    try{
-
-        // The server looks for the account before signing in.
+    try {
         const { email, password } = req.body;
+        const normalizedEmail = email.toLowerCase();
 
-        const user = await User.findOne({ email: email.toLowerCase() });
-        if (!user) return res.status(400).json({
-                message: "User does not exist"
-            });
+        const user = await User.findOne({ email: normalizedEmail });
+        if (!user) {
+            return res.status(400).json({ message: "User does not exist" });
+        }
 
-            // The saved password is compared with the typed password.
-            const isMatch = await user.comparePassword(password);
-            if (!isMatch) return res.status(400).json({
-                message: "Invalid credentials"
-            });
+        const isMatch = await user.comparePassword(password);
+        if (!isMatch) {
+            return res.status(400).json({ message: "Invalid credentials" });
+        }
 
-            // The account details are correct, so sign-in can finish.
-            res.status(200).json({
-                message: "User logged in successfully",
-                user: {
-                    id: user._id,
-                    username: user.username,
-                    email: user.email
-                }
-            });
-         
-    }catch (error) {
+        if (!user.verified) {
+            return res.status(403).json({ message: "Please verify your email before logging in" });
+        }
+
+        res.status(200).json({
+            message: "User logged in successfully",
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email
+            }
+        });
+    } catch (error) {
         res.status(500).json({
             message: "Internal server error"
         });
     }
-}
+};
 
 const logoutUser = async (req, res) => {
-    try{
+    try {
         const { email } = req.body;
 
         const user = await User.findOne({ email });
 
-        if (!user) return res.status(400).json({
-            message: "User does not exist"
-        });
+        if (!user) {
+            return res.status(400).json({ message: "User does not exist" });
+        }
 
-        // The user has been signed out successfully.
         res.status(200).json({
             message: "User logged out successfully"
         });
-
-    }catch (error) {
+    } catch (error) {
         res.status(500).json({
             message: "Internal server error", error
         });
     }
-}
+};
 
 const updateUser = async (req, res) => {
     try {
@@ -163,7 +187,7 @@ const updateUser = async (req, res) => {
 };
 
 const deleteUser = async (req, res) => {
-    try{
+    try {
         const { email } = req.body;
 
         const user = await User.findOneAndDelete({ email });
@@ -172,14 +196,14 @@ const deleteUser = async (req, res) => {
             message: "User does not exist"
         });
 
-        // The account has been removed successfully.
         res.status(200).json({
             message: "User deleted successfully"
         });
-    }catch(error){
+    } catch (error) {
         res.status(500).json({
             message: "Internal server error", error
         });
     }
-}
-export { registerUser, loginUser, logoutUser, updateUser, deleteUser };
+};
+
+export { registerUser, verifyUser, loginUser, logoutUser, updateUser, deleteUser };
