@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { User } from "../models/user.model.js";
-import transporter from "../config/email.js";
+import { sendVerificationEmail } from "../config/email.js";
 
 const registerUser = async (req, res) => {
     try {
@@ -34,15 +34,10 @@ const registerUser = async (req, res) => {
         const verificationUrl = `${baseUrl}/api/v1/users/verify/${verificationToken}`;
 
         try {
-            await transporter.sendMail({
-                from: process.env.EMAIL_USER,
+            await sendVerificationEmail({
                 to: user.email,
-                subject: "Verify your SNPL PORT account",
-                html: `
-                    <h1>Welcome to SNPL PORT, ${user.username}!</h1>
-                    <p>Please verify your account by clicking the link below:</p>
-                    <p><a href="${verificationUrl}">Verify your email</a></p>
-                `,
+                username: user.username,
+                verificationUrl,
             });
         } catch (emailError) {
             console.error("Verification email could not be sent:", emailError);
