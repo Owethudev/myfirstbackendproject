@@ -1,6 +1,6 @@
 import {Post} from "../models/post.model.js";
 
-//create a post
+// This makes a new project post.
 const createPost = async (req, res) => {
     try {
         const { name, description, portfolio, author } = req.body;
@@ -46,7 +46,7 @@ const getPosts = async (req, res) => {
 
 const updatePost = async (req, res) => {
     try{
-        //basic validation
+        // The server checks that the update has something to change.
         if(Object.keys(req.body).length === 0){
             return res.status(400).json({
                 message: "Please provide data to update"
@@ -76,7 +76,7 @@ const deletePost = async (req, res) => {
         const post = await Post.findById(req.params.id);
         if(!post) return res.status(404).json({ message: "Post not found" });
 
-        // Require the requester to provide username of the deleter
+        // The username proves that the person owns this post.
         const { username } = req.body;
         if (!username || post.author !== username) {
             return res.status(403).json({ message: "You are not authorized to delete this post" });

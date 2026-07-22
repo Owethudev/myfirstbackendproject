@@ -18,6 +18,13 @@ export type PostForm = {
   portfolio: string;
 };
 
+export type EventForm = {
+  name: string;
+  location: string;
+  theme: string;
+  time: string;
+};
+
 export type ProfileForm = AuthForm;
 
 export type PostComment = {
@@ -35,5 +42,15 @@ export type PostItem = {
   author?: string;
   likes?: number;
   comments?: PostComment[];
+  createdAt?: string;
+};
+
+export type EventItem = {
+  _id: string;
+  name: string;
+  location: string;
+  theme: string;
+  time: string;
+  author?: string;
   createdAt?: string;
 };

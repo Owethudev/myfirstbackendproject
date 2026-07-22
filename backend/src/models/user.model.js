@@ -31,13 +31,13 @@ const userSchema = new Schema(
 );
 
 
-// Hash the password before saving the user
+// The password is scrambled before it is saved.
 userSchema.pre("save", async function () {
     if (!this.isModified("password")) return;
     this.password = await bcrypt.hash(this.password, 10);
 });
 
-// Compare the provided password with the hashed password
+// This checks whether a typed password matches the saved password.
 userSchema.methods.comparePassword = async function (password) {
     return await bcrypt.compare(password, this.password);
 };

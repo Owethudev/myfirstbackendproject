@@ -7,7 +7,7 @@ type HeaderProps = {
 };
 
 export function Header({ user, onOpenProfile }: HeaderProps) {
-  // I keep the shared page heading and profile entry point together at the top of the shell.
+  // This top bar shows the page name and the profile menu button.
   return (
     <header className="sticky top-0 z-30 border-b border-[#2D1E2F]/10 bg-[#FFF8F0]/90 px-4 py-3 backdrop-blur md:px-6">
       <div className="mx-auto flex max-w-6xl items-center justify-between">

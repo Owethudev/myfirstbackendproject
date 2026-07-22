@@ -2,6 +2,7 @@ import { type FormEvent, type TouchEvent, useEffect, useState } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./App.css";
 import { AuthView } from "./components/AuthView.tsx";
+import { EventFeed } from "./components/EventFeed.tsx";
 import { Feed } from "./components/Feed.tsx";
 import { Header } from "./components/Header.tsx";
 import { ProfileDrawer } from "./components/ProfileDrawer.tsx";
@@ -9,6 +10,8 @@ import { buildApiUrl } from "./api.ts";
 import type {
   AuthForm,
   AuthMode,
+  EventForm,
+  EventItem,
   PostForm,
   PostItem,
   ProfileForm,
@@ -27,6 +30,13 @@ const EMPTY_POST_FORM: PostForm = {
   portfolio: "",
 };
 
+const EMPTY_EVENT_FORM: EventForm = {
+  name: "",
+  location: "",
+  theme: "",
+  time: "",
+};
+
 const getStoredUser = (): UserProfile | null => {
   try {
     const raw = localStorage.getItem("snpl_user");
@@ -41,17 +51,34 @@ function AppShell() {
   const [mode, setMode] = useState<AuthMode>("login");
   const [form, setForm] = useState<AuthForm>(EMPTY_AUTH_FORM);
   const [message, setMessage] = useState("");
-  // I restore the authenticated user before the first render so a refresh keeps the existing session.
+  // This reads the saved user before the page starts, so refresh keeps the login.
   const [user, setUser] = useState<UserProfile | null>(getStoredUser);
   const [loading, setLoading] = useState(false);
   const [posts, setPosts] = useState<PostItem[]>([]);
+  const [events, setEvents] = useState<EventItem[]>([]);
   const [postForm, setPostForm] = useState<PostForm>(EMPTY_POST_FORM);
+  const [eventForm, setEventForm] = useState<EventForm>(EMPTY_EVENT_FORM);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState<ProfileForm>(EMPTY_AUTH_FORM);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeFeed, setActiveFeed] = useState<"projects" | "events">(
+    "projects",
+  );
+
+  const selectFeed = (feed: "projects" | "events") => {
+    setActiveFeed(feed);
+    window.location.hash = feed === "projects" ? "feed" : "events";
+    window.setTimeout(() => {
+      document
+        .getElementById(feed === "projects" ? "feed" : "events")
+        ?.scrollIntoView({
+          behavior: "smooth",
+        });
+    }, 0);
+  };
 
   const loadPosts = async () => {
     try {
@@ -65,10 +92,23 @@ function AppShell() {
     }
   };
 
+  const loadEvents = async () => {
+    try {
+      const response = await fetch(buildApiUrl("/api/v1/events/getEvents"));
+      const data = await response.json();
+      if (response.ok) {
+        setEvents(data);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     if (user) {
-      // I defer the initial feed request until after the authenticated render completes.
+      // These requests wait until the logged-in page has started drawing.
       void Promise.resolve().then(loadPosts);
+      void Promise.resolve().then(loadEvents);
     }
   }, [user]);
 
@@ -104,7 +144,7 @@ function AppShell() {
       }
 
       setUser(data.user);
-      // I persist the logged-in user so a refresh does not log out.
+      // This saves the user so a refresh does not log out.
       try {
         localStorage.setItem("snpl_user", JSON.stringify(data.user));
       } catch (error) {
@@ -155,6 +195,38 @@ function AppShell() {
       console.error("handlePostSubmit error:", error);
       setMessage(
         error instanceof Error ? error.message : "Unable to create post",
+      );
+    }
+  };
+
+  const handleEventSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!user) return;
+
+    try {
+      const response = await fetch(buildApiUrl("/api/v1/events/create"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: eventForm.name,
+          location: eventForm.location,
+          theme: eventForm.theme,
+          time: eventForm.time,
+          author: user.username,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to create event");
+      }
+
+      setEventForm(EMPTY_EVENT_FORM);
+      await loadEvents();
+      setMessage(data.message || "Event created successfully");
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Unable to create event",
       );
     }
   };
@@ -214,7 +286,7 @@ function AppShell() {
       try {
         localStorage.removeItem("snpl_user");
       } catch {
-        // I keep logout successful even when browser storage is unavailable.
+        // Logout still works when the browser cannot use local storage.
       }
       setForm(EMPTY_AUTH_FORM);
       setMessage("");
@@ -241,9 +313,34 @@ function AppShell() {
       );
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Delete failed");
-      // I remove the deleted post locally so the feed updates immediately.
+      // This removes the deleted post right away from the screen.
       setPosts((current) => current.filter((post) => post._id !== postId));
       setMessage(data.message || "Post deleted");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Delete failed");
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    if (!user) return;
+    const confirmed = window.confirm(
+      "Delete this event? This action cannot be undone.",
+    );
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(
+        buildApiUrl(`/api/v1/events/delete/${eventId}`),
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: user.username }),
+        },
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Delete failed");
+      setEvents((current) => current.filter((event) => event._id !== eventId));
+      setMessage(data.message || "Event deleted");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Delete failed");
     }
@@ -273,7 +370,7 @@ function AppShell() {
       try {
         localStorage.removeItem("snpl_user");
       } catch {
-        // I keep profile deletion successful even when browser storage is unavailable.
+        // Profile deletion still works when the browser cannot use local storage.
       }
       setMessage(data.message);
       setForm(EMPTY_AUTH_FORM);
@@ -339,29 +436,56 @@ function AppShell() {
               isEditing={isEditingProfile}
               profileForm={profileForm}
               postForm={postForm}
+              eventForm={eventForm}
               message={message}
               onClose={() => setIsProfileMenuOpen(false)}
               onToggleEditing={() => setIsEditingProfile((value) => !value)}
               onProfileFormChange={setProfileForm}
               onPostFormChange={setPostForm}
+              onEventFormChange={setEventForm}
               onProfileSubmit={handleProfileUpdate}
               onPostSubmit={handlePostSubmit}
+              onEventSubmit={handleEventSubmit}
               onLogout={handleLogout}
               onDeleteProfile={handleDeleteProfile}
             />
-            <Feed posts={posts} user={user} onDeletePost={handleDeletePost} />
+            {activeFeed === "projects" ? (
+              <Feed posts={posts} user={user} onDeletePost={handleDeletePost} />
+            ) : (
+              <EventFeed
+                events={events}
+                user={user}
+                onDeleteEvent={handleDeleteEvent}
+              />
+            )}
           </>
         )}
       </main>
 
       {user ? (
         <nav className="sticky bottom-3 z-20 mx-auto mb-5 flex max-w-md items-center justify-center rounded-full border border-[#2D1E2F]/10 bg-[#FFF8F0]/90 px-3 py-2 shadow-[0_16px_50px_rgba(45,30,47,0.14)] backdrop-blur">
-          <a
-            href="#feed"
-            className="rounded-full bg-[#EF476F] px-6 py-2 text-sm font-semibold text-[#FFF8F0]"
+          <button
+            type="button"
+            onClick={() => selectFeed("projects")}
+            className={`rounded-full px-6 py-2 text-sm font-semibold ${
+              activeFeed === "projects"
+                ? "bg-[#EF476F] text-[#FFF8F0]"
+                : "text-[#2D1E2F]"
+            }`}
           >
             Feed
-          </a>
+          </button>
+          <button
+            type="button"
+            onClick={() => selectFeed("events")}
+            className={`rounded-full px-6 py-2 text-sm font-semibold ${
+              activeFeed === "events"
+                ? "bg-[#FF6B35] text-[#FFF8F0]"
+                : "text-[#2D1E2F]"
+            }`}
+          >
+            Events
+          </button>
         </nav>
       ) : null}
 
@@ -377,7 +501,7 @@ function AppShell() {
 }
 
 function App() {
-  // I keep routing at the application boundary so feature components remain route-agnostic.
+  // Routing stays here so the smaller page parts do not need to know about routes.
   return (
     <BrowserRouter>
       <Routes>

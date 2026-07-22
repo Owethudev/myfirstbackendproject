@@ -25,5 +25,5 @@ export const CLASSMATES = [
   "Kabelo Mathapo",
 ] as const;
 
-// I duplicate the list so the conveyor can loop without a visible gap.
+// The names appear twice so the moving list can loop without a gap.
 export const MARQUEE_ITEMS = [...CLASSMATES, ...CLASSMATES];

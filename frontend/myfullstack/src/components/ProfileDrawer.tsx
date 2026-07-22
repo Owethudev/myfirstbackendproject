@@ -1,7 +1,12 @@
 import { type FormEvent, type Dispatch, type SetStateAction } from "react";
 import { motion } from "framer-motion";
 import { LogOut, Send, Trash2, X } from "lucide-react";
-import type { PostForm, ProfileForm, UserProfile } from "../types.ts";
+import type {
+  EventForm,
+  PostForm,
+  ProfileForm,
+  UserProfile,
+} from "../types.ts";
 
 type ProfileDrawerProps = {
   user: UserProfile;
@@ -9,13 +14,16 @@ type ProfileDrawerProps = {
   isEditing: boolean;
   profileForm: ProfileForm;
   postForm: PostForm;
+  eventForm: EventForm;
   message: string;
   onClose: () => void;
   onToggleEditing: () => void;
   onProfileFormChange: Dispatch<SetStateAction<ProfileForm>>;
   onPostFormChange: Dispatch<SetStateAction<PostForm>>;
+  onEventFormChange: Dispatch<SetStateAction<EventForm>>;
   onProfileSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onPostSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onEventSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onLogout: () => void;
   onDeleteProfile: () => void;
 };
@@ -26,17 +34,20 @@ export function ProfileDrawer({
   isEditing,
   profileForm,
   postForm,
+  eventForm,
   message,
   onClose,
   onToggleEditing,
   onProfileFormChange,
   onPostFormChange,
+  onEventFormChange,
   onProfileSubmit,
   onPostSubmit,
+  onEventSubmit,
   onLogout,
   onDeleteProfile,
 }: ProfileDrawerProps) {
-  // I keep profile editing, project publishing, and account actions together as one profile workflow.
+  // This drawer holds profile changes, project posts, events, and account buttons.
   return (
     <>
       <motion.aside
@@ -181,6 +192,66 @@ export function ProfileDrawer({
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#FF6B35] px-4 py-3 font-semibold text-[#FFF8F0]"
               >
                 Publish project
+                <Send size={16} />
+              </button>
+            </form>
+            {message ? (
+              <p className="mt-3 rounded-2xl border border-[#F9B208]/30 bg-[#F9B208]/10 px-4 py-2 text-sm text-[#2D1E2F]">
+                {message}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="rounded-[1.5rem] border border-[#2D1E2F]/10 bg-[#FFF8F0]/80 p-4">
+            <p className="mb-3 text-sm font-semibold text-[#2D1E2F]">
+              Post an event
+            </p>
+            <form onSubmit={onEventSubmit} className="space-y-3">
+              <input
+                placeholder="Event name"
+                value={eventForm.name}
+                onChange={(event) =>
+                  onEventFormChange({ ...eventForm, name: event.target.value })
+                }
+                className="w-full rounded-2xl border border-[#2D1E2F]/10 bg-[#FFF8F0] px-4 py-3 outline-none transition focus:border-[#EF476F] focus:ring-2 focus:ring-[#EF476F]/30"
+                required
+              />
+              <input
+                placeholder="Location"
+                value={eventForm.location}
+                onChange={(event) =>
+                  onEventFormChange({
+                    ...eventForm,
+                    location: event.target.value,
+                  })
+                }
+                className="w-full rounded-2xl border border-[#2D1E2F]/10 bg-[#FFF8F0] px-4 py-3 outline-none transition focus:border-[#EF476F] focus:ring-2 focus:ring-[#EF476F]/30"
+                required
+              />
+              <input
+                placeholder="Theme"
+                value={eventForm.theme}
+                onChange={(event) =>
+                  onEventFormChange({ ...eventForm, theme: event.target.value })
+                }
+                className="w-full rounded-2xl border border-[#2D1E2F]/10 bg-[#FFF8F0] px-4 py-3 outline-none transition focus:border-[#EF476F] focus:ring-2 focus:ring-[#EF476F]/30"
+                required
+              />
+              <input
+                type="datetime-local"
+                aria-label="Event time"
+                value={eventForm.time}
+                onChange={(event) =>
+                  onEventFormChange({ ...eventForm, time: event.target.value })
+                }
+                className="w-full rounded-2xl border border-[#2D1E2F]/10 bg-[#FFF8F0] px-4 py-3 outline-none transition focus:border-[#EF476F] focus:ring-2 focus:ring-[#EF476F]/30"
+                required
+              />
+              <button
+                type="submit"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#EF476F] px-4 py-3 font-semibold text-[#FFF8F0]"
+              >
+                Publish event
                 <Send size={16} />
               </button>
             </form>

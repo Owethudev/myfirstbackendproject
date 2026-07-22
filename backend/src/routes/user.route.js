@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { registerUser, loginUser, logoutUser, updateUser, deleteUser } from "../controllers/user.controller.js";
 
-const router = Router(); // create a router instance
+const router = Router(); // This groups the user account paths.
 
 router.route("/register").post(registerUser);
 router.route("/login").post(loginUser);

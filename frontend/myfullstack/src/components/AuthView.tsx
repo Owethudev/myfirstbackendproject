@@ -27,7 +27,7 @@ export function AuthView({
   onSubmit,
   onPauseChange,
 }: AuthViewProps) {
-  // I keep the public landing content and authentication form together because they share the unauthenticated view.
+  // This part shows the welcome message and the login box before sign-in.
   return (
     <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
       <motion.section
