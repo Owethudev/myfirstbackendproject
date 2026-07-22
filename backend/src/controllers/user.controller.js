@@ -1,6 +1,5 @@
-import crypto from "crypto";
 import { User } from "../models/user.model.js";
-import { sendVerificationEmail } from "../config/email.js";
+import { sendWelcomeEmail } from "../config/email.js";
 
 const registerUser = async (req, res) => {
     try {
@@ -20,67 +19,35 @@ const registerUser = async (req, res) => {
             });
         }
 
-        const verificationToken = crypto.randomBytes(32).toString("hex");
         const user = await User.create({
             username,
             email: normalizedEmail,
             password,
             loggedIn: false,
-            verified: false,
-            verificationToken,
         });
 
-        const baseUrl = process.env.BACKEND_URL || process.env.VITE_API_BASE_URL || "http://localhost:8000";
-        const verificationUrl = `${baseUrl}/api/v1/users/verify/${verificationToken}`;
-
         try {
-            await sendVerificationEmail({
+            await sendWelcomeEmail({
                 to: user.email,
                 username: user.username,
-                verificationUrl,
+            });
+
+            await sendWelcomeEmail({
+                to: user.email,
+                username: user.username,
             });
         } catch (emailError) {
-            console.error("Verification email could not be sent:", emailError);
+            console.error("Welcome email could not be sent:", emailError);
         }
 
         res.status(201).json({
             success: true,
-            message: "User registered successfully. Please verify your email before logging in.",
+            message: "User registered successfully.",
             user: {
                 id: user._id,
                 username: user.username,
                 email: user.email
             }
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Internal server error",
-            error: error.message
-        });
-    }
-};
-
-const verifyUser = async (req, res) => {
-    try {
-        const { token } = req.params;
-
-        if (!token) {
-            return res.status(400).json({ message: "Verification token is required" });
-        }
-
-        const user = await User.findOne({ verificationToken: token });
-        if (!user) {
-            return res.status(400).json({ message: "Invalid or expired verification token" });
-        }
-
-        user.verified = true;
-        user.verificationToken = undefined;
-        await user.save();
-
-        res.status(200).json({
-            success: true,
-            message: "Email verified successfully"
         });
     } catch (error) {
         res.status(500).json({
@@ -104,10 +71,6 @@ const loginUser = async (req, res) => {
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
             return res.status(400).json({ message: "Invalid credentials" });
-        }
-
-        if (!user.verified) {
-            return res.status(403).json({ message: "Please verify your email before logging in" });
         }
 
         res.status(200).json({
@@ -201,4 +164,4 @@ const deleteUser = async (req, res) => {
     }
 };
 
-export { registerUser, verifyUser, loginUser, logoutUser, updateUser, deleteUser };
+export { registerUser, loginUser, logoutUser, updateUser, deleteUser };
