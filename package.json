@@ -5,8 +5,8 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "mongoose": "^9.7.4",
+    "nodemailer": "^9.0.3",
     "nodemon": "^3.1.14",
-    "resend": "^6.18.0",
     "tailwindcss": "^4.3.3"
   },
   "name": "myfirstbackendproject",
@@ -15,6 +15,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "prestart": "npm install --prefix backend --no-audit --no-fund",
     "start": "node backend/src/index.js",
     "dev": "nodemon backend/src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
