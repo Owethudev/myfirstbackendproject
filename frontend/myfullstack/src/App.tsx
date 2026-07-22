@@ -3,66 +3,25 @@ import { motion } from "framer-motion";
 import { Compass, LogOut, Menu, Send, Sparkles, Trash2, X } from "lucide-react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./App.css";
-import { VITE_API_BASE_URL } from "./config.ts";
-
-type AuthMode = "login" | "signup";
-
-type UserProfile = {
-  id: string;
-  username: string;
-  email: string;
-};
-
-type PostItem = {
-  _id: string;
-  name: string;
-  description: string;
-  age: number;
-  portfolio: string;
-  author?: string;
-  likes?: number;
-  comments?: Array<{ text: string; author: string; createdAt?: string }>;
-  createdAt?: string;
-};
-
-const API_BASE_URL = VITE_API_BASE_URL ?? "/api";
-const buildApiUrl = (path: string) =>
-  `${API_BASE_URL.replace(/\/$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
-
-const classmates = [
-  "Owethu Jezile",
-  "Malebo Nkuna",
-  "Portia Mashaba",
-  "Sijabulile Ncube",
-  "Shaun Maselela",
-  "Refilwe Segoe",
-  "Lesedi Modikwe",
-  "Bheki Buthelezi",
-  "Gareth Motloutsi",
-  "Thami Sithole",
-  "Qiyaam Moodley",
-  "Galaletsang Modise",
-  "Lerato Thungo",
-  "Mhlengi Ngwenya",
-  "David Ndlovu",
-  "Noluthando Molui",
-  "Tswarelo Madonsela",
-  "Nyiko Vumani",
-  "Mpho Mangena",
-  "Elias Mtisie",
-  "Mandla Sikhosana",
-  "Thandokuhle Maphanga",
-  "Bao Kekana",
-  "Kabelo Mathapo",
-];
-
-const marqueeItems = [...classmates, ...classmates];
+import { buildApiUrl } from "./api.ts";
+import { MARQUEE_ITEMS } from "./constants.ts";
+import { getCoverStyle } from "./utils.ts";
+import type { AuthMode, PostItem, UserProfile } from "./types.ts";
 
 function AppShell() {
   const [mode, setMode] = useState<AuthMode>("login");
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [message, setMessage] = useState("");
-  const [user, setUser] = useState<UserProfile | null>(null);
+  // I restore the authenticated user before the first render so a refresh keeps the existing session.
+  const [user, setUser] = useState<UserProfile | null>(() => {
+    try {
+      const raw = localStorage.getItem("snpl_user");
+      return raw ? (JSON.parse(raw) as UserProfile) : null;
+    } catch (error) {
+      console.error("failed reading local user", error);
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(false);
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [postForm, setPostForm] = useState({
@@ -76,23 +35,10 @@ function AppShell() {
     email: "",
     password: "",
   });
-  // comments removed from UI — keep no draft state
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-
-  // persist user across page refreshes
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("snpl_user");
-      if (raw) {
-        setUser(JSON.parse(raw));
-      }
-    } catch (e) {
-      console.error("failed reading local user", e);
-    }
-  }, []);
 
   const loadPosts = async () => {
     try {
@@ -108,7 +54,8 @@ function AppShell() {
 
   useEffect(() => {
     if (user) {
-      void loadPosts();
+      // I defer the initial feed request until after the authenticated render completes.
+      void Promise.resolve().then(loadPosts);
     }
   }, [user]);
 
@@ -144,7 +91,7 @@ function AppShell() {
       }
 
       setUser(data.user);
-      // persist logged-in user so refresh doesn't log out
+      // I persist the logged-in user so a refresh does not log out.
       try {
         localStorage.setItem("snpl_user", JSON.stringify(data.user));
       } catch (e) {
@@ -253,8 +200,8 @@ function AppShell() {
       setUser(null);
       try {
         localStorage.removeItem("snpl_user");
-      } catch (e) {
-        /* ignore */
+      } catch {
+        // I keep logout successful even when browser storage is unavailable.
       }
       setForm({ username: "", email: "", password: "" });
       setMessage("");
@@ -262,8 +209,6 @@ function AppShell() {
       setMessage(error instanceof Error ? error.message : "Logout failed");
     }
   };
-
-  // like feature removed
 
   const handleDeletePost = async (postId: string) => {
     if (!user) return;
@@ -282,15 +227,13 @@ function AppShell() {
       );
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Delete failed");
-      // remove post from local state
+      // I remove the deleted post locally so the feed updates immediately.
       setPosts((current) => current.filter((p) => p._id !== postId));
       setMessage(data.message || "Post deleted");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Delete failed");
     }
   };
-
-  // comments removed from UI
 
   const handleDeleteProfile = async () => {
     if (!user) return;
@@ -315,8 +258,8 @@ function AppShell() {
       setUser(null);
       try {
         localStorage.removeItem("snpl_user");
-      } catch (e) {
-        /* ignore */
+      } catch {
+        // I keep profile deletion successful even when browser storage is unavailable.
       }
       setMessage(data.message);
       setForm({ username: "", email: "", password: "" });
@@ -350,13 +293,6 @@ function AppShell() {
       return;
     }
     setPullDistance(0);
-  };
-
-  const getCoverStyle = (name: string) => {
-    const base = (name.charCodeAt(0) + name.length * 17) % 360;
-    return {
-      background: `linear-gradient(135deg, hsl(${base} 85% 94%), hsl(${(base + 42) % 360} 80% 72%))`,
-    };
   };
 
   return (
@@ -409,8 +345,6 @@ function AppShell() {
                 <br />
                 BUILD TOGETHER.
               </h2>
-              {/* Intro paragraph removed per request */}
-
               <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-[#2D1E2F]/10 bg-[#FFF8F0] p-4 sm:p-5">
                 <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.25em] text-[#3D5A40]">
                   <Compass size={14} />
@@ -426,7 +360,7 @@ function AppShell() {
                     animationPlayState: isPaused ? "paused" : "running",
                   }}
                 >
-                  {marqueeItems.map((name, index) => (
+                  {MARQUEE_ITEMS.map((name, index) => (
                     <span
                       key={`${name}-${index}`}
                       className="rounded-full border border-[#2D1E2F]/10 bg-[#FFF8F0] px-4 py-2 text-sm font-semibold text-[#2D1E2F] shadow-sm"
@@ -768,7 +702,6 @@ function AppShell() {
                           {post.name}
                         </h3>
                       </div>
-                      {/* age badge removed per design */}
                     </div>
 
                     <div className="space-y-4 p-5">
@@ -816,9 +749,7 @@ function AppShell() {
                       </a>
 
                       <div className="flex items-center justify-between gap-2 border-t border-[#2D1E2F]/10 pt-4">
-                        <div className="flex gap-2">
-                          {/* likes and comments removed */}
-                        </div>
+                        <div className="flex gap-2"></div>
                         {user && post.author === user.username ? (
                           <button
                             type="button"
@@ -830,8 +761,6 @@ function AppShell() {
                           </button>
                         ) : null}
                       </div>
-
-                      {/* comments removed from post view */}
                     </div>
                   </motion.article>
                 ))
