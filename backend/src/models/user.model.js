@@ -24,6 +24,14 @@ const userSchema = new Schema(
             lowercase: true,
             trim: true,
         },
+        verified: {
+            type: Boolean,
+            default: false,
+        },
+        verificationToken: {
+            type: String,
+            default: null,
+        },
     },
     {
         timestamps: true,
