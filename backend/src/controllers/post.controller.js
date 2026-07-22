@@ -89,4 +89,6 @@ const deletePost = async (req, res) => {
         res.status(500).json({ message: "Internal server error", error });
     }
 }
-export { createPost, getPosts, updatePost, deletePost };
+export { createPost, getPosts, updatePost, deletePost }; 
+
+// This sends all saved posts to the post feed.
