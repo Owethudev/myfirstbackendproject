@@ -1,5 +1,4 @@
 import { User } from "../models/user.model.js";
-import { sendWelcomeEmail } from "../config/email.js";
 
 const registerUser = async (req, res) => {
     try {
@@ -25,20 +24,6 @@ const registerUser = async (req, res) => {
             password,
             loggedIn: false,
         });
-
-        try {
-            await sendWelcomeEmail({
-                to: user.email,
-                username: user.username,
-            });
-
-            await sendWelcomeEmail({
-                to: user.email,
-                username: user.username,
-            });
-        } catch (emailError) {
-            console.error("Welcome email could not be sent:", emailError);
-        }
 
         res.status(201).json({
             success: true,
