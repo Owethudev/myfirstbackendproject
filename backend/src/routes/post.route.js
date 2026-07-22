@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { createPost , getPosts , updatePost , deletePost} from "../controllers/post.controller.js";
 
-const router = Router(); // create a router instance
+const router = Router(); // This groups the project post paths.
 
 router.route("/create").post(createPost);
 router.route("/getPosts").get(getPosts);

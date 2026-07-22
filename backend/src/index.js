@@ -9,11 +9,11 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({
     path: path.resolve(__dirname, "../.env"),
-}); // load environment variables from .env file
+}); // This loads private settings from the environment file.
 
 const startServer = async () => {
     try {
-        await connectDB(); // connect to the database
+        await connectDB(); // This connects the server to the database.
 
         app.on("error", (error) => {
             console.log("Error starting server:", error);

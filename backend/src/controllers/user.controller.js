@@ -5,13 +5,13 @@ const registerUser = async (req, res) => {
     try {
         const { username, email, password } = req.body;
 
-        //basic validation
+        // The server checks that the request has the needed information.
         if (!username || !email || !password) {
             return res.status(400).json({
                 message: "Please provide username, email, and password"
             });
         }
-        // check if user already exists
+        // The server looks for an account with this email first.
         const existing = await User.findOne({ email: email.toLowerCase() });
         if (existing) {
             return res.status(400).json({
@@ -19,7 +19,7 @@ const registerUser = async (req, res) => {
             });
         }
 
-        // create new user
+        // A new account is made after the checks pass.
         const user = await User.create({
             username,
             email: email.toLowerCase(),
@@ -73,7 +73,7 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
     try{
 
-        //checking if user exists
+        // The server looks for the account before signing in.
         const { email, password } = req.body;
 
         const user = await User.findOne({ email: email.toLowerCase() });
@@ -81,13 +81,13 @@ const loginUser = async (req, res) => {
                 message: "User does not exist"
             });
 
-            //compare passwords
+            // The saved password is compared with the typed password.
             const isMatch = await user.comparePassword(password);
             if (!isMatch) return res.status(400).json({
                 message: "Invalid credentials"
             });
 
-            //login successful
+            // The account details are correct, so sign-in can finish.
             res.status(200).json({
                 message: "User logged in successfully",
                 user: {
@@ -114,7 +114,7 @@ const logoutUser = async (req, res) => {
             message: "User does not exist"
         });
 
-        //logout successful
+        // The user has been signed out successfully.
         res.status(200).json({
             message: "User logged out successfully"
         });
@@ -172,7 +172,7 @@ const deleteUser = async (req, res) => {
             message: "User does not exist"
         });
 
-        //delete successful
+        // The account has been removed successfully.
         res.status(200).json({
             message: "User deleted successfully"
         });
