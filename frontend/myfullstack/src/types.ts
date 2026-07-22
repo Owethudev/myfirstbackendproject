@@ -6,6 +6,20 @@ export type UserProfile = {
   email: string;
 };
 
+export type AuthForm = {
+  username: string;
+  email: string;
+  password: string;
+};
+
+export type PostForm = {
+  name: string;
+  description: string;
+  portfolio: string;
+};
+
+export type ProfileForm = AuthForm;
+
 export type PostComment = {
   text: string;
   author: string;
