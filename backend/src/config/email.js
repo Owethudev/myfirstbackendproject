@@ -8,10 +8,14 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
+const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
+const smtpPort = Number(process.env.SMTP_PORT || 465);
+const smtpSecure = process.env.SMTP_SECURE !== "false";
+
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
+  host: smtpHost,
+  port: smtpPort,
+  secure: smtpSecure,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -20,7 +24,7 @@ const transporter = nodemailer.createTransport({
 
 const sendVerificationEmail = async ({ to, username, verificationUrl }) => {
   const mailOptions = {
-    from: process.env.EMAIL_USER || '"SNPLPORT" <no-reply@example.com>',
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER || '"SNPLPORT" <no-reply@example.com>',
     to,
     subject: "Verify your SNPLPORT account",
     html: `
