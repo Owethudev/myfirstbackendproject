@@ -29,8 +29,8 @@ const registerUser = async (req, res) => {
             verificationToken,
         });
 
-        const siteUrl = process.env.FRONTEND_URL || process.env.VITE_API_BASE_URL || process.env.BACKEND_URL || "https://snpl-port.onrender.com";
-        const verificationUrl = `${siteUrl}/api/v1/users/verify/${verificationToken}`;
+        const baseUrl = process.env.BACKEND_URL || process.env.VITE_API_BASE_URL || "https://snpl-port.onrender.com";
+        const verificationUrl = `${baseUrl}/api/v1/users/verify/${verificationToken}`;
 
         try {
             console.log(`Attempting to send verification email to ${user.email}`);
