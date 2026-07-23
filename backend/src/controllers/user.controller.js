@@ -33,6 +33,7 @@ const registerUser = async (req, res) => {
         const verificationUrl = `${baseUrl}/api/v1/users/verify/${verificationToken}`;
 
         try {
+            console.log(`Attempting to send verification email to ${user.email}`);
             await sendVerificationEmail({
                 to: user.email,
                 username: user.username,
@@ -40,6 +41,11 @@ const registerUser = async (req, res) => {
             });
         } catch (emailError) {
             console.error("Verification email could not be sent:", emailError);
+            await User.findByIdAndDelete(user._id);
+            return res.status(500).json({
+                success: false,
+                message: "Account could not be created because the verification email could not be sent."
+            });
         }
 
         res.status(201).json({
