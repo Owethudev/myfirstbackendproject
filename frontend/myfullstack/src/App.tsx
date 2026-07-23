@@ -143,6 +143,22 @@ function AppShell() {
         throw new Error(data.message || "Request failed");
       }
 
+      if (mode === "signup") {
+        setForm(EMPTY_AUTH_FORM);
+        setMode("login");
+        setUser(null);
+        try {
+          localStorage.removeItem("snpl_user");
+        } catch (error) {
+          console.error("failed clearing stored user", error);
+        }
+        setMessage(
+          data.message ||
+            "Account created. Please verify your email before logging in.",
+        );
+        return;
+      }
+
       setUser(data.user);
       // This saves the user so a refresh does not log out.
       try {
