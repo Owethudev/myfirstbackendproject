@@ -1,6 +1,11 @@
-import { type FormEvent, type Dispatch, type SetStateAction } from "react";
+import {
+  type FormEvent,
+  type Dispatch,
+  type SetStateAction,
+  useState,
+} from "react";
 import { motion } from "framer-motion";
-import { Compass, Send, Sparkles } from "lucide-react";
+import { Compass, Eye, EyeOff, Send, Sparkles } from "lucide-react";
 import { MARQUEE_ITEMS } from "../constants.ts";
 import type { AuthForm, AuthMode } from "../types.ts";
 
@@ -27,6 +32,8 @@ export function AuthView({
   onSubmit,
   onPauseChange,
 }: AuthViewProps) {
+  const [showPassword, setShowPassword] = useState(false);
+
   // This part shows the welcome message and the login box before sign-in.
   return (
     <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
@@ -138,16 +145,26 @@ export function AuthView({
 
           <label className="block text-sm font-medium text-[#2D1E2F]/80">
             <span className="mb-2 block">Password</span>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(event) =>
-                onFormChange({ ...form, password: event.target.value })
-              }
-              className="w-full rounded-2xl border border-[#2D1E2F]/10 bg-[#FFF8F0] px-4 py-3 outline-none transition focus:border-[#EF476F] focus:ring-2 focus:ring-[#EF476F]/30"
-              placeholder="••••••"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={(event) =>
+                  onFormChange({ ...form, password: event.target.value })
+                }
+                className="w-full rounded-2xl border border-[#2D1E2F]/10 bg-[#FFF8F0] px-4 py-3 pr-12 outline-none transition focus:border-[#EF476F] focus:ring-2 focus:ring-[#EF476F]/30"
+                placeholder="••••••"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((value) => !value)}
+                className="absolute inset-y-0 right-3 flex items-center text-[#2D1E2F]/65 transition hover:text-[#2D1E2F]"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </label>
 
           <button
