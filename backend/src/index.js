@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({
     path: path.resolve(__dirname, "../.env"),
-}); // This loads private settings from the environment file.
+}); // This loads private settings from the environment file...
 
 const startServer = async () => {
     try {
