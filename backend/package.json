@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/Owethudev/myfirstbackendproject#readme",
   "dependencies": {
-    "nodemailer": "^9.0.3"
+    "nodemailer": "^9.0.3",
+    "uuid": "^14.0.1"
   }
 }
