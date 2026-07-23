@@ -47,6 +47,27 @@ const getStoredUser = (): UserProfile | null => {
   }
 };
 
+const clearAuthState = (
+  setUser: (value: UserProfile | null) => void,
+  setMode: (value: AuthMode) => void,
+  setForm: (value: AuthForm) => void,
+  setMessage: (value: string) => void,
+  setProfileForm: (value: ProfileForm) => void,
+  setIsProfileMenuOpen: (value: boolean) => void,
+) => {
+  setUser(null);
+  try {
+    localStorage.removeItem("snpl_user");
+  } catch (error) {
+    console.error("failed clearing stored user", error);
+  }
+  setMode("login");
+  setForm(EMPTY_AUTH_FORM);
+  setProfileForm(EMPTY_AUTH_FORM);
+  setIsProfileMenuOpen(false);
+  setMessage("");
+};
+
 function AppShell() {
   const [mode, setMode] = useState<AuthMode>("login");
   const [form, setForm] = useState<AuthForm>(EMPTY_AUTH_FORM);
@@ -144,14 +165,14 @@ function AppShell() {
       }
 
       if (mode === "signup") {
-        setForm(EMPTY_AUTH_FORM);
-        setMode("login");
-        setUser(null);
-        try {
-          localStorage.removeItem("snpl_user");
-        } catch (error) {
-          console.error("failed clearing stored user", error);
-        }
+        clearAuthState(
+          setUser,
+          setMode,
+          setForm,
+          setMessage,
+          setProfileForm,
+          setIsProfileMenuOpen,
+        );
         setMessage(
           data.message ||
             "Account created. Please verify your email before logging in.",
@@ -284,7 +305,17 @@ function AppShell() {
   };
 
   const handleLogout = async () => {
-    if (!user) return;
+    if (!user) {
+      clearAuthState(
+        setUser,
+        setMode,
+        setForm,
+        setMessage,
+        setProfileForm,
+        setIsProfileMenuOpen,
+      );
+      return;
+    }
 
     try {
       const response = await fetch(buildApiUrl("/api/v1/users/logout"), {
@@ -293,20 +324,29 @@ function AppShell() {
         body: JSON.stringify({ email: user.email }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(data.message || "Logout failed");
+        console.warn("Logout request failed, forcing local sign-out", data);
       }
 
-      setUser(null);
-      try {
-        localStorage.removeItem("snpl_user");
-      } catch {
-        // Logout still works when the browser cannot use local storage.
-      }
-      setForm(EMPTY_AUTH_FORM);
-      setMessage("");
+      clearAuthState(
+        setUser,
+        setMode,
+        setForm,
+        setMessage,
+        setProfileForm,
+        setIsProfileMenuOpen,
+      );
+      setMessage(data.message || "You have been logged out.");
     } catch (error) {
+      clearAuthState(
+        setUser,
+        setMode,
+        setForm,
+        setMessage,
+        setProfileForm,
+        setIsProfileMenuOpen,
+      );
       setMessage(error instanceof Error ? error.message : "Logout failed");
     }
   };
@@ -363,7 +403,17 @@ function AppShell() {
   };
 
   const handleDeleteProfile = async () => {
-    if (!user) return;
+    if (!user) {
+      clearAuthState(
+        setUser,
+        setMode,
+        setForm,
+        setMessage,
+        setProfileForm,
+        setIsProfileMenuOpen,
+      );
+      return;
+    }
 
     const confirmed = window.confirm(
       "Are you sure you want to delete your profile?",
@@ -377,20 +427,32 @@ function AppShell() {
         body: JSON.stringify({ email: user.email }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(data.message || "Delete failed");
+        console.warn(
+          "Profile deletion request failed, forcing local sign-out",
+          data,
+        );
       }
 
-      setUser(null);
-      try {
-        localStorage.removeItem("snpl_user");
-      } catch {
-        // Profile deletion still works when the browser cannot use local storage.
-      }
-      setMessage(data.message);
-      setForm(EMPTY_AUTH_FORM);
+      clearAuthState(
+        setUser,
+        setMode,
+        setForm,
+        setMessage,
+        setProfileForm,
+        setIsProfileMenuOpen,
+      );
+      setMessage(data.message || "Profile deleted.");
     } catch (error) {
+      clearAuthState(
+        setUser,
+        setMode,
+        setForm,
+        setMessage,
+        setProfileForm,
+        setIsProfileMenuOpen,
+      );
       setMessage(error instanceof Error ? error.message : "Delete failed");
     }
   };
