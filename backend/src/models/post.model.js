@@ -12,11 +12,6 @@ const postSchema = new Schema(
               trim: true,
         },
 
-        age: {
-            type: Number,
-            default: 0,
-        },
-
         portfolio: {
             type: String,
             trim: true,
@@ -26,20 +21,6 @@ const postSchema = new Schema(
             type: String,
             trim: true,
             default: "Unknown",
-        },
-
-        likes: {
-            type: Number,
-            default: 0,
-        },
-
-        comments: {
-            type: [{
-                text: { type: String, required: true, trim: true },
-                author: { type: String, trim: true, default: "Guest" },
-                createdAt: { type: Date, default: Date.now },
-            }],
-            default: [],
         },
     },
 

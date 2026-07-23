@@ -213,7 +213,6 @@ function AppShell() {
         body: JSON.stringify({
           name: postForm.name,
           description: postForm.description,
-          age: 0,
           portfolio: postForm.portfolio,
           author: user.username,
         }),
