@@ -1,4 +1,4 @@
-import {Post} from "../models/post.model.js";
+import { Post } from "../models/post.model.js";
 
 // This makes a new project post.
 const createPost = async (req, res) => {
@@ -34,7 +34,7 @@ const createPost = async (req, res) => {
 // This sends all saved posts to the post feed.
 const getPosts = async (req, res) => {
     try{
-        const posts = await Post.find();
+        const posts = await Post.find({ moderationStatus: { $ne: "removed" } });
         res.status(200).json(posts);
 
     }catch(error){
@@ -44,6 +44,45 @@ const getPosts = async (req, res) => {
         });
     }
 }
+
+const getReportedPosts = async (req, res) => {
+    try {
+        const posts = await Post.find({ reported: true }).sort({ createdAt: -1 });
+        res.status(200).json(posts);
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error", error });
+    }
+};
+
+const reviewPost = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { reportReason, reported, moderationStatus } = req.body;
+
+        const post = await Post.findById(id);
+        if (!post) {
+            return res.status(404).json({ message: "Post not found" });
+        }
+
+        if (typeof reported === "boolean") {
+            post.reported = reported;
+        }
+
+        if (reportReason !== undefined) {
+            post.reportReason = reportReason;
+        }
+
+        if (moderationStatus) {
+            post.moderationStatus = moderationStatus;
+        }
+
+        await post.save();
+
+        res.status(200).json({ message: "Post review updated", post });
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error", error });
+    }
+};
 
 // This updates a post's information.
 const updatePost = async (req, res) => {
@@ -93,4 +132,21 @@ const deletePost = async (req, res) => {
     }
 }
 
-export { createPost, getPosts, updatePost, deletePost }; 
+const adminDeletePost = async (req, res) => {
+    try {
+        const post = await Post.findById(req.params.id);
+        if (!post) {
+            return res.status(404).json({ message: "Post not found" });
+        }
+
+        post.moderationStatus = "removed";
+        post.reported = true;
+        await post.save();
+
+        res.status(200).json({ message: "Post removed by admin" });
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error", error });
+    }
+};
+
+export { createPost, getPosts, getReportedPosts, reviewPost, updatePost, deletePost, adminDeletePost }; 

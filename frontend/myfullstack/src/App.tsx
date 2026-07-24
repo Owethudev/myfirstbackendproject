@@ -2,6 +2,7 @@ import { type FormEvent, type TouchEvent, useEffect, useState } from "react";
 import { ArrowUp } from "lucide-react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
+import { AdminDashboard } from "./components/AdminDashboard.tsx";
 import { AuthView } from "./components/AuthView.tsx";
 import { EventFeed } from "./components/EventFeed.tsx";
 import { Feed } from "./components/Feed.tsx";
@@ -201,6 +202,9 @@ function AppShell() {
       // This saves the user so a refresh does not log out.
       try {
         localStorage.setItem("snpl_user", JSON.stringify(data.user));
+        if (data.token) {
+          localStorage.setItem("snpl_token", data.token);
+        }
       } catch (error) {
         console.error("failed persisting user", error);
       }
@@ -659,10 +663,7 @@ function App() {
           path="/admin"
           element={
             <AdminRoute>
-              <div className="min-h-screen bg-[#FFF8F0] p-8 text-[#2D1E2F]">
-                <h1 className="text-3xl font-semibold">Admin Panel</h1>
-                <p className="mt-2">Only administrators can view this page.</p>
-              </div>
+              <AdminDashboard />
             </AdminRoute>
           }
         />
