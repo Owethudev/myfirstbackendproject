@@ -26,7 +26,7 @@ export function Header({
   return (
     <header className="sticky top-0 z-30 border-b border-[#2D1E2F]/10 bg-[#FFF8F0]/90 px-4 py-3 backdrop-blur md:px-6">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
-        <div>
+        <div className={isSearchOpen ? "hidden sm:block" : "block"}>
           <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#EF476F]">
             SNPL PORT
           </p>
@@ -36,7 +36,7 @@ export function Header({
               : "CLASSROOM PORTFOLIO"}
           </h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           {user ? (
             <>
               <button
