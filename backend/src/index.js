@@ -15,6 +15,13 @@ dotenv.config({
 
 // Start the server after successfully connecting to the database.
 const startServer = async () => {
+    const isProduction = process.env.NODE_ENV === "production";
+
+    if (isProduction && !process.env.JWT_SECRET) {
+        console.error("FATAL: JWT_SECRET must be set in production.");
+        process.exit(1);
+    }
+
     try {
         await connectDB(); // This connects the server to the database.
 

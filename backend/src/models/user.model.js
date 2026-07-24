@@ -25,6 +25,11 @@ const userSchema = new Schema(
             lowercase: true,
             trim: true,
         },
+        role: {
+            type: String,
+            enum: ["user", "admin"],
+            default: "user",
+        },
         verified: {
             type: Boolean,
             default: false,
