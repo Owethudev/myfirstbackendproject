@@ -1,6 +1,6 @@
 import { type FormEvent, type TouchEvent, useEffect, useState } from "react";
 import { ArrowUp } from "lucide-react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
 import { AuthView } from "./components/AuthView.tsx";
 import { EventFeed } from "./components/EventFeed.tsx";
@@ -632,6 +632,21 @@ function AppShell() {
   );
 }
 
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const storedUser = getStoredUser();
+  const isAdmin = storedUser?.role === "admin";
+
+  if (!storedUser) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function App() {
   // Routing stays here so the smaller page parts do not need to know about routes.
   return (
@@ -640,6 +655,17 @@ function App() {
         <Route path="/" element={<AppShell />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <div className="min-h-screen bg-[#FFF8F0] p-8 text-[#2D1E2F]">
+                <h1 className="text-3xl font-semibold">Admin Panel</h1>
+                <p className="mt-2">Only administrators can view this page.</p>
+              </div>
+            </AdminRoute>
+          }
+        />
         <Route path="*" element={<AppShell />} />
       </Routes>
     </BrowserRouter>

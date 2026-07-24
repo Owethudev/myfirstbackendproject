@@ -1,3 +1,4 @@
+import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { User } from "../models/user.model.js";
 import { sendVerificationEmail } from "../config/email.js";
@@ -115,12 +116,25 @@ const loginUser = async (req, res) => {
             return res.status(403).json({ message: "Please verify your email before logging in" });
         }
 
+        const token = jwt.sign(
+            {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                role: user.role,
+            },
+            process.env.JWT_SECRET || "development-only-secret",
+            { expiresIn: "1d" }
+        );
+
         res.status(200).json({
             message: "User logged in successfully",
+            token,
             user: {
                 id: user._id,
                 username: user.username,
-                email: user.email
+                email: user.email,
+                role: user.role,
             }
         });
     } catch (error) {
