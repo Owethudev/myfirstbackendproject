@@ -1,9 +1,12 @@
 import express from "express";
 
-const app = express(); // This makes the web server.
+// This file sets up the Express server, including middleware for JSON parsing and CORS headers, and connects the user, post, and event routes to their respective controllers.
+const app = express(); 
 
-app.use(express.json()); // This lets the server read JSON data.
+// This middleware allows the server to parse incoming JSON requests.
+app.use(express.json()); 
 
+// This middleware sets the necessary headers to allow cross-origin requests from any domain, and handles preflight OPTIONS requests.
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");

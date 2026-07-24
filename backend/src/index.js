@@ -4,13 +4,16 @@ import { fileURLToPath } from "url";
 import connectDB from "./config/database.js";
 import app from "./app.js";
 
+// Get the current file path so we can resolve the backend .env file reliably.
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Load environment variables from the backend .env file.
 dotenv.config({
     path: path.resolve(__dirname, "../.env"),
-}); // This loads private settings from the environment file...
+}); 
 
+// Start the server after successfully connecting to the database.
 const startServer = async () => {
     try {
         await connectDB(); // This connects the server to the database.

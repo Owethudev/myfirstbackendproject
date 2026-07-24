@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 
+// This shape tells the database what one post must look like.
 const postSchema = new Schema(
     {
        name: {

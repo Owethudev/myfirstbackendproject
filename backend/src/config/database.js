@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 
+// This function connects to the MongoDB database using the connection string from the environment variables.
 const  connectDB = async () => {
     try{
            const connectionInstance = await mongoose.connect

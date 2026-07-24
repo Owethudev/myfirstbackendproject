@@ -511,6 +511,7 @@ function AppShell() {
               user={user}
               isOpen={isProfileMenuOpen}
               isEditing={isEditingProfile}
+              activeFeed={activeFeed}
               profileForm={profileForm}
               postForm={postForm}
               eventForm={eventForm}

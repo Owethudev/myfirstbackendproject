@@ -31,6 +31,7 @@ const createPost = async (req, res) => {
 
 }
 
+// This sends all saved posts to the post feed.
 const getPosts = async (req, res) => {
     try{
         const posts = await Post.find();
@@ -44,6 +45,7 @@ const getPosts = async (req, res) => {
     }
 }
 
+// This updates a post's information.
 const updatePost = async (req, res) => {
     try{
         // The server checks that the update has something to change.
@@ -71,6 +73,7 @@ const updatePost = async (req, res) => {
     }
 }
 
+// This removes a post only when the name matches its owner.
 const deletePost = async (req, res) => {
     try{
         const post = await Post.findById(req.params.id);
@@ -89,6 +92,5 @@ const deletePost = async (req, res) => {
         res.status(500).json({ message: "Internal server error", error });
     }
 }
-export { createPost, getPosts, updatePost, deletePost }; 
 
-// This sends all saved posts to the post feed.
+export { createPost, getPosts, updatePost, deletePost }; 
