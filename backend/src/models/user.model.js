@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
 
+//model for the user, with username, password, email, verified and verificationToken fields
 const userSchema = new Schema(
     {
         username: {

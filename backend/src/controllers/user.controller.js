@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import { User } from "../models/user.model.js";
 import { sendVerificationEmail } from "../config/email.js";
 
+// This registers a new user and sends a verification email.
 const registerUser = async (req, res) => {
     try {
         const { username, email, password } = req.body;
@@ -66,6 +67,7 @@ const registerUser = async (req, res) => {
     }
 };
 
+// This verifies a user's email using the token sent in the verification email.
 const verifyUser = async (req, res) => {
     try {
         const { token } = req.params;
@@ -93,6 +95,7 @@ const verifyUser = async (req, res) => {
     }
 };
 
+// This logs in a user by checking their email and password.
 const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -127,6 +130,7 @@ const loginUser = async (req, res) => {
     }
 };
 
+// This logs out a user by simply acknowledging the request.
 const logoutUser = async (req, res) => {
     try {
         const { email } = req.body;
@@ -147,6 +151,7 @@ const logoutUser = async (req, res) => {
     }
 };
 
+// This updates a user's profile information.
 const updateUser = async (req, res) => {
     try {
         const { id, username, email, password } = req.body;
@@ -183,6 +188,7 @@ const updateUser = async (req, res) => {
     }
 };
 
+// This deletes a user from the database.
 const deleteUser = async (req, res) => {
     try {
         const { email } = req.body;
