@@ -4,6 +4,7 @@ import {
   type SetStateAction,
   useState,
 } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Compass, Eye, EyeOff, Send, Sparkles } from "lucide-react";
 import { MARQUEE_ITEMS } from "../constants.ts";
@@ -175,6 +176,17 @@ export function AuthView({
             {loading ? "Working..." : mode === "login" ? "Login" : "Sign up"}
             <Send size={16} />
           </button>
+
+          {mode === "login" ? (
+            <div className="text-center text-sm">
+              <Link
+                to="/forgot-password"
+                className="font-semibold text-[#EF476F] underline-offset-4 hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
+          ) : null}
         </form>
 
         {message ? (

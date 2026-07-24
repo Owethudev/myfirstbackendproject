@@ -29,32 +29,17 @@ const getApiKey = () => {
 // Backup token if no real API key is available.
 const fallbackApiKey = "a99cb26a-3013-4168-bac6-8039d0c4405e";
 
-// Send a verification email to a newly registered user using the external mail API.
-const sendVerificationEmail = async ({ to, username, verificationUrl }) => {
-  // Use the configured API key, or the fallback key if one is not available.
+// Reuse the same outbound email provider so verification and password-reset
+// emails follow the same secure delivery path.
+const sendEmailRequest = async ({ to, subject, html, from }) => {
   const apiKey = getApiKey() || fallbackApiKey;
 
-  // Determine which email address should appear as the sender.
-  const from = process.env.EMAIL_FROM || process.env.EMAIL_USER || '"SNPLPORT" <no-reply@example.com>';
-
-  // Stop early if there is still no usable API key.
   if (!apiKey) {
     throw new Error("API_MAIL_KEY is not configured.");
   }
 
-  // Build the JSON request body that the mail service expects.
-  const payload = JSON.stringify({
-    to,
-    subject: "Verify your SNPLPORT account",
-    html: `
-      <h1>Welcome to SNPLPORT, ${username}!</h1>
-      <p>Please verify your account by clicking the link below:</p>
-      <p><a href="${verificationUrl}">Verify your email</a></p>
-    `,
-    from,
-  });
+  const payload = JSON.stringify({ to, subject, html, from });
 
-  // Configure the HTTPS request to the mail server endpoint.
   const options = {
     hostname: "mailserver.automationlounge.com",
     port: 443,
@@ -67,7 +52,6 @@ const sendVerificationEmail = async ({ to, username, verificationUrl }) => {
     },
   };
 
-  // Send the request and resolve or reject based on the HTTP response.
   return new Promise((resolve, reject) => {
     const req = https.request(options, (res) => {
       let data = "";
@@ -89,6 +73,40 @@ const sendVerificationEmail = async ({ to, username, verificationUrl }) => {
   });
 };
 
+// Send a verification email to a newly registered user using the external mail API.
+const sendVerificationEmail = async ({ to, username, verificationUrl }) => {
+  const from = process.env.EMAIL_FROM || process.env.EMAIL_USER || '"SNPLPORT" <no-reply@example.com>';
+
+  return sendEmailRequest({
+    to,
+    subject: "Verify your SNPLPORT account",
+    html: `
+      <h1>Welcome to SNPLPORT, ${username}!</h1>
+      <p>Please verify your account by clicking the link below:</p>
+      <p><a href="${verificationUrl}">Verify your email</a></p>
+    `,
+    from,
+  });
+};
+
+// Send a password reset email using the same provider and email flow.
+const sendPasswordResetEmail = async ({ to, username, resetUrl }) => {
+  const from = process.env.EMAIL_FROM || process.env.EMAIL_USER || '"SNPLPORT" <no-reply@example.com>';
+
+  return sendEmailRequest({
+    to,
+    subject: "Reset your SNPLPORT password",
+    html: `
+      <h1>Hello ${username},</h1>
+      <p>You requested a password reset for your SNPLPORT account.</p>
+      <p>Use the link below to create a new password:</p>
+      <p><a href="${resetUrl}">Reset your password</a></p>
+      <p>This link expires in 15 minutes.</p>
+    `,
+    from,
+  });
+};
+
 // Export the function so the controller can call it during registration.
-export { sendVerificationEmail };
+export { sendVerificationEmail, sendPasswordResetEmail };
 export default sendVerificationEmail;
