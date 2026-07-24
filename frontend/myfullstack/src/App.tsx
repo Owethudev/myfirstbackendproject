@@ -5,8 +5,10 @@ import "./App.css";
 import { AuthView } from "./components/AuthView.tsx";
 import { EventFeed } from "./components/EventFeed.tsx";
 import { Feed } from "./components/Feed.tsx";
+import { ForgotPasswordPage } from "./components/ForgotPasswordPage.tsx";
 import { Header } from "./components/Header.tsx";
 import { ProfileDrawer } from "./components/ProfileDrawer.tsx";
+import { ResetPasswordPage } from "./components/ResetPasswordPage.tsx";
 import { buildApiUrl } from "./api.ts";
 import type {
   AuthForm,
@@ -635,6 +637,9 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<AppShell />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         <Route path="*" element={<AppShell />} />
       </Routes>
     </BrowserRouter>
