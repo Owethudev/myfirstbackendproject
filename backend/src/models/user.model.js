@@ -34,6 +34,10 @@ const userSchema = new Schema(
             type: Boolean,
             default: false,
         },
+        suspended: {
+            type: Boolean,
+            default: false,
+        },
         verificationToken: {
             type: String,
             default: null,

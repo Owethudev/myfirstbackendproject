@@ -23,6 +23,19 @@ const postSchema = new Schema(
             trim: true,
             default: "Unknown",
         },
+        reported: {
+            type: Boolean,
+            default: false,
+        },
+        reportReason: {
+            type: String,
+            default: null,
+        },
+        moderationStatus: {
+            type: String,
+            enum: ["pending", "approved", "removed"],
+            default: "approved",
+        },
     },
 
     {

@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { User } from "../models/user.model.js";
+import { Post } from "../models/post.model.js";
 import { sendVerificationEmail } from "../config/email.js";
 
 // This registers a new user and sends a verification email.
@@ -223,4 +224,107 @@ const deleteUser = async (req, res) => {
     }
 };
 
-export { registerUser, verifyUser, loginUser, logoutUser, updateUser, deleteUser };
+const listUsers = async (req, res) => {
+    try {
+        const { search = "" } = req.query;
+        const query = search
+            ? {
+                $or: [
+                    { username: { $regex: search, $options: "i" } },
+                    { email: { $regex: search, $options: "i" } },
+                ],
+            }
+            : {};
+
+        const users = await User.find(query).select("-password -verificationToken -resetPasswordToken -resetPasswordExpires").sort({ createdAt: -1 });
+
+        res.status(200).json(users);
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+const updateUserStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { suspended } = req.body;
+
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        user.suspended = Boolean(suspended);
+        await user.save();
+
+        res.status(200).json({
+            message: user.suspended ? "User suspended successfully" : "User reactivated successfully",
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                role: user.role,
+                verified: user.verified,
+                suspended: user.suspended,
+            },
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+const updateUserRole = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { role } = req.body;
+
+        if (!role || !["user", "admin"].includes(role)) {
+            return res.status(400).json({ message: "A valid role is required" });
+        }
+
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        user.role = role;
+        await user.save();
+
+        res.status(200).json({
+            message: "User role updated successfully",
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                role: user.role,
+                verified: user.verified,
+                suspended: user.suspended,
+            },
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+const getAdminStats = async (req, res) => {
+    try {
+        const [totalUsers, verifiedUsers, unverifiedUsers, totalPosts] = await Promise.all([
+            User.countDocuments(),
+            User.countDocuments({ verified: true }),
+            User.countDocuments({ verified: false }),
+            Post.countDocuments(),
+        ]);
+
+        res.status(200).json({
+            totalUsers,
+            verifiedUsers,
+            unverifiedUsers,
+            totalPosts,
+            totalComments: 0,
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+export { registerUser, verifyUser, loginUser, logoutUser, updateUser, deleteUser, listUsers, updateUserStatus, updateUserRole, getAdminStats };
