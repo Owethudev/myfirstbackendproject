@@ -98,14 +98,6 @@ function AppShell() {
 
   const selectFeed = (feed: "projects" | "events") => {
     setActiveFeed(feed);
-    window.location.hash = feed === "projects" ? "feed" : "events";
-    window.setTimeout(() => {
-      document
-        .getElementById(feed === "projects" ? "feed" : "events")
-        ?.scrollIntoView({
-          behavior: "smooth",
-        });
-    }, 0);
   };
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
