@@ -1,4 +1,5 @@
 import { type FormEvent, type TouchEvent, useEffect, useState } from "react";
+import { ArrowUp } from "lucide-react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./App.css";
 import { AuthView } from "./components/AuthView.tsx";
@@ -88,6 +89,12 @@ function AppShell() {
   const [activeFeed, setActiveFeed] = useState<"projects" | "events">(
     "projects",
   );
+  const [feedLayout, setFeedLayout] = useState<"current" | "grid">("current");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchScope, setSearchScope] = useState<"projects" | "events">(
+    "projects",
+  );
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const selectFeed = (feed: "projects" | "events") => {
     setActiveFeed(feed);
@@ -100,6 +107,22 @@ function AppShell() {
         });
     }, 0);
   };
+
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+
+  const filteredPosts = posts.filter((post) => {
+    if (!normalizedSearch) return true;
+    return [post.name, post.description, post.portfolio, post.author]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(normalizedSearch));
+  });
+
+  const filteredEvents = events.filter((event) => {
+    if (!normalizedSearch) return true;
+    return [event.name, event.location, event.theme, event.time, event.author]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(normalizedSearch));
+  });
 
   const loadPosts = async () => {
     try {
@@ -483,9 +506,27 @@ function AppShell() {
     setPullDistance(0);
   };
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <div className="min-h-screen bg-transparent text-[#2D1E2F]">
-      <Header user={user} onOpenProfile={() => setIsProfileMenuOpen(true)} />
+      <Header
+        user={user}
+        searchScope={searchScope}
+        searchTerm={searchTerm}
+        isSearchOpen={isSearchOpen}
+        onSearchScopeChange={(scope) => {
+          setSearchScope(scope);
+          setActiveFeed(scope);
+          setIsSearchOpen(true);
+          selectFeed(scope);
+        }}
+        onSearchTermChange={setSearchTerm}
+        onToggleSearch={() => setIsSearchOpen((value) => !value)}
+        onOpenProfile={() => setIsProfileMenuOpen(true)}
+      />
 
       <main
         className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8"
@@ -528,11 +569,19 @@ function AppShell() {
               onDeleteProfile={handleDeleteProfile}
             />
             {activeFeed === "projects" ? (
-              <Feed posts={posts} user={user} onDeletePost={handleDeletePost} />
+              <Feed
+                posts={filteredPosts}
+                user={user}
+                viewMode={feedLayout}
+                onViewModeChange={setFeedLayout}
+                onDeletePost={handleDeletePost}
+              />
             ) : (
               <EventFeed
-                events={events}
+                events={filteredEvents}
                 user={user}
+                viewMode={feedLayout}
+                onViewModeChange={setFeedLayout}
                 onDeleteEvent={handleDeleteEvent}
               />
             )}
@@ -541,30 +590,41 @@ function AppShell() {
       </main>
 
       {user ? (
-        <nav className="sticky bottom-3 z-20 mx-auto mb-5 flex max-w-md items-center justify-center rounded-full border border-[#2D1E2F]/10 bg-[#FFF8F0]/90 px-3 py-2 shadow-[0_16px_50px_rgba(45,30,47,0.14)] backdrop-blur">
+        <>
           <button
             type="button"
-            onClick={() => selectFeed("projects")}
-            className={`rounded-full px-6 py-2 text-sm font-semibold ${
-              activeFeed === "projects"
-                ? "bg-[#EF476F] text-[#FFF8F0]"
-                : "text-[#2D1E2F]"
-            }`}
+            onClick={scrollToTop}
+            className="fixed bottom-24 right-4 z-20 flex h-12 w-12 items-center justify-center rounded-full border border-[#2D1E2F]/10 bg-[#FFF8F0] text-[#2D1E2F] shadow-[0_16px_50px_rgba(45,30,47,0.14)] transition hover:-translate-y-0.5"
+            aria-label="Return to top"
           >
-            Feed
+            <ArrowUp size={18} />
           </button>
-          <button
-            type="button"
-            onClick={() => selectFeed("events")}
-            className={`rounded-full px-6 py-2 text-sm font-semibold ${
-              activeFeed === "events"
-                ? "bg-[#FF6B35] text-[#FFF8F0]"
-                : "text-[#2D1E2F]"
-            }`}
-          >
-            Events
-          </button>
-        </nav>
+
+          <nav className="sticky bottom-3 z-20 mx-auto mb-5 flex max-w-lg items-center justify-center gap-2 rounded-full border border-[#2D1E2F]/10 bg-[#FFF8F0]/90 px-3 py-2 shadow-[0_16px_50px_rgba(45,30,47,0.14)] backdrop-blur">
+            <button
+              type="button"
+              onClick={() => selectFeed("projects")}
+              className={`rounded-full px-6 py-2 text-sm font-semibold ${
+                activeFeed === "projects"
+                  ? "bg-[#EF476F] text-[#FFF8F0]"
+                  : "text-[#2D1E2F]"
+              }`}
+            >
+              Feed
+            </button>
+            <button
+              type="button"
+              onClick={() => selectFeed("events")}
+              className={`rounded-full px-6 py-2 text-sm font-semibold ${
+                activeFeed === "events"
+                  ? "bg-[#FF6B35] text-[#FFF8F0]"
+                  : "text-[#2D1E2F]"
+              }`}
+            >
+              Events
+            </button>
+          </nav>
+        </>
       ) : null}
 
       {isRefreshing ? (
