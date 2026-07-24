@@ -598,7 +598,7 @@ function AppShell() {
             <ArrowUp size={18} />
           </button>
 
-          <nav className="sticky bottom-3 z-20 mx-auto mb-5 flex max-w-lg items-center justify-center gap-2 rounded-full border border-[#2D1E2F]/10 bg-[#FFF8F0]/90 px-3 py-2 shadow-[0_16px_50px_rgba(45,30,47,0.14)] backdrop-blur">
+          <nav className="sticky bottom-3 z-20 mx-auto mb-5 flex max-w-lg flex-wrap items-center justify-center gap-2 rounded-full border border-[#2D1E2F]/10 bg-[#FFF8F0]/90 px-3 py-2 shadow-[0_16px_50px_rgba(45,30,47,0.14)] backdrop-blur">
             <button
               type="button"
               onClick={() => selectFeed("projects")}
@@ -621,6 +621,15 @@ function AppShell() {
             >
               Events
             </button>
+            {user?.role === "admin" ? (
+              <button
+                type="button"
+                onClick={() => window.location.assign("/admin")}
+                className="rounded-full bg-[#2D1E2F] px-6 py-2 text-sm font-semibold text-[#FFF8F0]"
+              >
+                Dash
+              </button>
+            ) : null}
           </nav>
         </>
       ) : null}
