@@ -11,7 +11,11 @@ const __dirname = path.dirname(__filename);
 // Load environment variables from the backend .env file.
 dotenv.config({
     path: path.resolve(__dirname, "../.env"),
-}); 
+});
+
+dotenv.config({
+    path: path.resolve(__dirname, "../../.env"),
+});
 
 // Start the server after successfully connecting to the database.
 const startServer = async () => {
