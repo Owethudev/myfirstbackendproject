@@ -1,8 +1,14 @@
-import { type FormEvent, type TouchEvent, useEffect, useState } from "react";
+import {
+  type FormEvent,
+  type TouchEvent,
+  Suspense,
+  lazy,
+  useEffect,
+  useState,
+} from "react";
 import { ArrowUp } from "lucide-react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
-import { AdminDashboard } from "./components/AdminDashboard.tsx";
 import { AuthView } from "./components/AuthView.tsx";
 import { EventFeed } from "./components/EventFeed.tsx";
 import { Feed } from "./components/Feed.tsx";
@@ -11,6 +17,11 @@ import { Header } from "./components/Header.tsx";
 import { ProfileDrawer } from "./components/ProfileDrawer.tsx";
 import { ResetPasswordPage } from "./components/ResetPasswordPage.tsx";
 import { buildApiUrl } from "./api.ts";
+const AdminDashboard = lazy(() =>
+  import("./components/AdminDashboard.tsx").then((module) => ({
+    default: module.AdminDashboard,
+  })),
+);
 import type {
   AuthForm,
   AuthMode,
@@ -751,7 +762,15 @@ function App() {
           path="/admin"
           element={
             <AdminRoute>
-              <AdminDashboard />
+              <Suspense
+                fallback={
+                  <div className="p-8 text-center text-sm text-[#2D1E2F]">
+                    Loading admin dashboard…
+                  </div>
+                }
+              >
+                <AdminDashboard />
+              </Suspense>
             </AdminRoute>
           }
         />
