@@ -29,7 +29,6 @@ import type {
   EventItem,
   PostForm,
   PostItem,
-  ProfileForm,
   UserProfile,
 } from "./types.ts";
 
@@ -75,7 +74,6 @@ const clearAuthState = (
   setMode: (value: AuthMode) => void,
   setForm: (value: AuthForm) => void,
   setMessage: (value: string) => void,
-  setProfileForm: (value: ProfileForm) => void,
   setIsProfileMenuOpen: (value: boolean) => void,
 ) => {
   setUser(null);
@@ -86,7 +84,6 @@ const clearAuthState = (
   }
   setMode("login");
   setForm(EMPTY_AUTH_FORM);
-  setProfileForm(EMPTY_AUTH_FORM);
   setIsProfileMenuOpen(false);
   setMessage("");
 };
@@ -102,8 +99,6 @@ function AppShell() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [postForm, setPostForm] = useState<PostForm>(EMPTY_POST_FORM);
   const [eventForm, setEventForm] = useState<EventForm>(EMPTY_EVENT_FORM);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [profileForm, setProfileForm] = useState<ProfileForm>(EMPTY_AUTH_FORM);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
@@ -244,7 +239,6 @@ function AppShell() {
           setMode,
           setForm,
           setMessage,
-          setProfileForm,
           setIsProfileMenuOpen,
         );
         setMessage(
@@ -264,11 +258,6 @@ function AppShell() {
       } catch (error) {
         console.error("failed persisting user", error);
       }
-      setProfileForm({
-        username: data.user.username,
-        email: data.user.email,
-        password: "",
-      });
       setMessage(data.message);
     } catch (error) {
       setMessage(
@@ -344,42 +333,6 @@ function AppShell() {
     }
   };
 
-  const handleProfileUpdate = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!user) return;
-
-    try {
-      const response = await fetch(buildApiUrl("/api/v1/users/update"), {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: user.id,
-          username: profileForm.username || undefined,
-          email: profileForm.email || undefined,
-          password: profileForm.password || undefined,
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Profile update failed");
-      }
-
-      setUser(data.user);
-      setProfileForm({
-        username: data.user.username,
-        email: data.user.email,
-        password: "",
-      });
-      setIsEditingProfile(false);
-      setMessage(data.message);
-    } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Profile update failed",
-      );
-    }
-  };
-
   const handleLogout = async () => {
     if (!user) {
       clearAuthState(
@@ -387,7 +340,6 @@ function AppShell() {
         setMode,
         setForm,
         setMessage,
-        setProfileForm,
         setIsProfileMenuOpen,
       );
       return;
@@ -410,7 +362,6 @@ function AppShell() {
         setMode,
         setForm,
         setMessage,
-        setProfileForm,
         setIsProfileMenuOpen,
       );
       setMessage(data.message || "You have been logged out.");
@@ -420,7 +371,6 @@ function AppShell() {
         setMode,
         setForm,
         setMessage,
-        setProfileForm,
         setIsProfileMenuOpen,
       );
       setMessage(error instanceof Error ? error.message : "Logout failed");
@@ -485,7 +435,6 @@ function AppShell() {
         setMode,
         setForm,
         setMessage,
-        setProfileForm,
         setIsProfileMenuOpen,
       );
       return;
@@ -516,7 +465,6 @@ function AppShell() {
         setMode,
         setForm,
         setMessage,
-        setProfileForm,
         setIsProfileMenuOpen,
       );
       setMessage(data.message || "Profile deleted.");
@@ -526,7 +474,6 @@ function AppShell() {
         setMode,
         setForm,
         setMessage,
-        setProfileForm,
         setIsProfileMenuOpen,
       );
       setMessage(error instanceof Error ? error.message : "Delete failed");
@@ -605,18 +552,13 @@ function AppShell() {
             <ProfileDrawer
               user={user}
               isOpen={isProfileMenuOpen}
-              isEditing={isEditingProfile}
               activeFeed={activeFeed}
-              profileForm={profileForm}
               postForm={postForm}
               eventForm={eventForm}
               message={message}
               onClose={() => setIsProfileMenuOpen(false)}
-              onToggleEditing={() => setIsEditingProfile((value) => !value)}
-              onProfileFormChange={setProfileForm}
               onPostFormChange={setPostForm}
               onEventFormChange={setEventForm}
-              onProfileSubmit={handleProfileUpdate}
               onPostSubmit={handlePostSubmit}
               onEventSubmit={handleEventSubmit}
               onLogout={handleLogout}

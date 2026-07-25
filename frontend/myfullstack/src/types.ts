@@ -26,8 +26,6 @@ export type EventForm = {
   time: string;
 };
 
-export type ProfileForm = AuthForm;
-
 export type PostItem = {
   _id: string;
   name: string;
