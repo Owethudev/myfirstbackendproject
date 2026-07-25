@@ -122,7 +122,7 @@ export function AdminDashboard() {
       try {
         const response = await fetch(
           buildApiUrl(
-            `/api/v1/users/list?search=${encodeURIComponent(search)}`,
+            `/api/v1/users/list?page=1&limit=20&search=${encodeURIComponent(search)}`,
           ),
           {
             headers: {
@@ -131,12 +131,14 @@ export function AdminDashboard() {
           },
         );
 
-        const data = await response.json().catch(() => []);
+        const data = await response
+          .json()
+          .catch(() => ({}) as { items?: unknown[] });
         if (!response.ok) {
           throw new Error(data.message || "Unable to load users");
         }
 
-        setUsers(data);
+        setUsers(Array.isArray(data.items) ? data.items : []);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unable to load users");
       }
@@ -144,18 +146,23 @@ export function AdminDashboard() {
 
     const loadReportedPosts = async () => {
       try {
-        const response = await fetch(buildApiUrl("/api/v1/posts/reported"), {
-          headers: {
-            Authorization: `Bearer ${token}`,
+        const response = await fetch(
+          buildApiUrl("/api/v1/posts/reported?page=1&limit=20"),
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           },
-        });
+        );
 
-        const data = await response.json().catch(() => []);
+        const data = await response
+          .json()
+          .catch(() => ({}) as { items?: unknown[] });
         if (!response.ok) {
           throw new Error(data.message || "Unable to load reported posts");
         }
 
-        setReportedPosts(data);
+        setReportedPosts(Array.isArray(data.items) ? data.items : []);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Unable to load reported posts",
@@ -298,16 +305,14 @@ export function AdminDashboard() {
         },
       });
 
-      const data = await response
-        .json()
-        .catch(
-          () =>
-            ({}) as {
-              success?: boolean;
-              data?: AuditLogEntry[];
-              message?: string;
-            },
-        );
+      const data = await response.json().catch(
+        () =>
+          ({}) as {
+            success?: boolean;
+            data?: AuditLogEntry[];
+            message?: string;
+          },
+      );
 
       if (!response.ok || !data.success) {
         throw new Error(data.message || "Unable to load audit logs");

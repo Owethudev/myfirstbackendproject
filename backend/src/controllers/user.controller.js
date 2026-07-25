@@ -228,7 +228,11 @@ const deleteUser = async (req, res) => {
 
 const listUsers = async (req, res) => {
     try {
-        const { search = "" } = req.query;
+        const { search = "", page = "1", limit = "20" } = req.query;
+        const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+        const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+        const skip = (parsedPage - 1) * parsedLimit;
+
         const query = search
             ? {
                 $or: [
@@ -238,9 +242,22 @@ const listUsers = async (req, res) => {
             }
             : {};
 
-        const users = await User.find(query).select("-password -verificationToken -resetPasswordToken -resetPasswordExpires").sort({ createdAt: -1 });
+        const totalItems = await User.countDocuments(query);
+        const users = await User.find(query)
+            .select("-password -verificationToken -resetPasswordToken -resetPasswordExpires")
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(parsedLimit);
 
-        res.status(200).json(users);
+        const totalPages = Math.max(Math.ceil(totalItems / parsedLimit), 1);
+
+        res.status(200).json({
+            currentPage: parsedPage,
+            totalPages,
+            totalItems,
+            hasNextPage: parsedPage < totalPages,
+            items: users,
+        });
     } catch (error) {
         res.status(500).json({ message: "Internal server error", error: error.message });
     }

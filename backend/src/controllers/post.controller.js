@@ -33,22 +33,58 @@ const createPost = async (req, res) => {
 
 // This sends all saved posts to the post feed.
 const getPosts = async (req, res) => {
-    try{
-        const posts = await Post.find({ moderationStatus: { $ne: "removed" } });
-        res.status(200).json(posts);
+    try {
+        const { page = "1", limit = "12" } = req.query;
+        const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+        const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 12, 1), 100);
+        const skip = (parsedPage - 1) * parsedLimit;
 
-    }catch(error){
+        const query = { moderationStatus: { $ne: "removed" } };
+        const totalItems = await Post.countDocuments(query);
+        const posts = await Post.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(parsedLimit);
 
+        const totalPages = Math.max(Math.ceil(totalItems / parsedLimit), 1);
+
+        res.status(200).json({
+            currentPage: parsedPage,
+            totalPages,
+            totalItems,
+            hasNextPage: parsedPage < totalPages,
+            items: posts,
+        });
+    } catch (error) {
         res.status(500).json({
             message: "Internal server error", error
         });
     }
-}
+};
 
 const getReportedPosts = async (req, res) => {
     try {
-        const posts = await Post.find({ reported: true }).sort({ createdAt: -1 });
-        res.status(200).json(posts);
+        const { page = "1", limit = "20" } = req.query;
+        const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+        const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+        const skip = (parsedPage - 1) * parsedLimit;
+
+        const query = { reported: true };
+        const totalItems = await Post.countDocuments(query);
+        const posts = await Post.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(parsedLimit);
+
+        const totalPages = Math.max(Math.ceil(totalItems / parsedLimit), 1);
+
+        res.status(200).json({
+            currentPage: parsedPage,
+            totalPages,
+            totalItems,
+            hasNextPage: parsedPage < totalPages,
+            items: posts,
+        });
     } catch (error) {
         res.status(500).json({ message: "Internal server error", error });
     }
