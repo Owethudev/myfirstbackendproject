@@ -1,6 +1,7 @@
 import express from "express";
 import authMiddleware from "./middleware/auth.middleware.js";
 import auditMiddleware from "./middleware/audit.middleware.js";
+import { generalApiLimiter } from "./middleware/rateLimiter.middleware.js";
 
 // This file sets up the Express server, including middleware for JSON parsing and CORS headers, and connects the user, post, and event routes to their respective controllers.
 const app = express(); 
@@ -31,6 +32,7 @@ import auditRouter from "./routes/audit.route.js";
 
 app.use(authMiddleware);
 app.use(auditMiddleware);
+app.use(generalApiLimiter);
 
 // These lines connect paths to their handlers.
 app.use("/api/auth", authRouter);
