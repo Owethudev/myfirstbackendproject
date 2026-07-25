@@ -34,6 +34,14 @@ app.use(authMiddleware);
 app.use(auditMiddleware);
 app.use(generalApiLimiter);
 
+app.get("/health", (req, res) => {
+    res.status(200).json({
+        success: true,
+        message: "Server is healthy",
+        timestamp: new Date().toISOString(),
+    });
+});
+
 // These lines connect paths to their handlers.
 app.use("/api/auth", authRouter);
 app.use("/api/v1/users", userRouter);
