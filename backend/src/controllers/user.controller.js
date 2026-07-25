@@ -4,6 +4,8 @@ import { User } from "../models/user.model.js";
 import { Post } from "../models/post.model.js";
 import { sendVerificationEmail } from "../config/email.js";
 
+const JWT_SECRET = process.env.JWT_SECRET || "wookiepookiebear";
+
 // This registers a new user and sends a verification email.
 const registerUser = async (req, res) => {
     try {
@@ -124,7 +126,7 @@ const loginUser = async (req, res) => {
                 email: user.email,
                 role: user.role,
             },
-            process.env.JWT_SECRET || "development-only-secret",
+            JWT_SECRET,
             { expiresIn: "1d" }
         );
 

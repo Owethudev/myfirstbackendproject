@@ -1,5 +1,7 @@
 import jwt from "jsonwebtoken";
 
+const JWT_SECRET = process.env.JWT_SECRET || "wookiepookiebear";
+
 const authMiddleware = (req, res, next) => {
     const authHeader = req.headers.authorization;
 
@@ -15,7 +17,7 @@ const authMiddleware = (req, res, next) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || "development-only-secret");
+        const decoded = jwt.verify(token, JWT_SECRET);
         req.user = decoded;
         return next();
     } catch (error) {

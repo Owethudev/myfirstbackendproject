@@ -66,15 +66,22 @@ export function AdminDashboard() {
       return;
     }
 
+    const token = localStorage.getItem("snpl_token") || "";
+    if (!token) {
+      setError("Please log in again to access the dashboard.");
+      setLoading(false);
+      return;
+    }
+
     const loadStats = async () => {
       try {
         const response = await fetch(buildApiUrl("/api/v1/users/stats"), {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("snpl_token") || ""}`,
+            Authorization: `Bearer ${token}`,
           },
         });
 
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
         if (!response.ok) {
           throw new Error(data.message || "Unable to load admin statistics");
         }
@@ -97,12 +104,12 @@ export function AdminDashboard() {
           ),
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("snpl_token") || ""}`,
+              Authorization: `Bearer ${token}`,
             },
           },
         );
 
-        const data = await response.json();
+        const data = await response.json().catch(() => []);
         if (!response.ok) {
           throw new Error(data.message || "Unable to load users");
         }
@@ -117,11 +124,11 @@ export function AdminDashboard() {
       try {
         const response = await fetch(buildApiUrl("/api/v1/posts/reported"), {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("snpl_token") || ""}`,
+            Authorization: `Bearer ${token}`,
           },
         });
 
-        const data = await response.json();
+        const data = await response.json().catch(() => []);
         if (!response.ok) {
           throw new Error(data.message || "Unable to load reported posts");
         }

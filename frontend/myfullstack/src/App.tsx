@@ -122,34 +122,40 @@ function AppShell() {
   const loadPosts = async () => {
     try {
       const response = await fetch(buildApiUrl("/api/v1/posts/getPosts"));
-      const data = await response.json();
+      const data = await response.json().catch(() => []);
       if (response.ok) {
-        setPosts(data);
+        setPosts(Array.isArray(data) ? data : []);
+      } else {
+        setPosts([]);
       }
     } catch (error) {
-      console.error(error);
+      console.error("Failed to load posts", error);
+      setPosts([]);
     }
   };
 
   const loadEvents = async () => {
     try {
       const response = await fetch(buildApiUrl("/api/v1/events/getEvents"));
-      const data = await response.json();
+      const data = await response.json().catch(() => []);
       if (response.ok) {
-        setEvents(data);
+        setEvents(Array.isArray(data) ? data : []);
+      } else {
+        setEvents([]);
       }
     } catch (error) {
-      console.error(error);
+      console.error("Failed to load events", error);
+      setEvents([]);
     }
   };
 
+  const refreshCommunityData = async () => {
+    await Promise.all([loadPosts(), loadEvents()]);
+  };
+
   useEffect(() => {
-    if (user) {
-      // These requests wait until the logged-in page has started drawing.
-      void Promise.resolve().then(loadPosts);
-      void Promise.resolve().then(loadEvents);
-    }
-  }, [user]);
+    void refreshCommunityData();
+  }, [user?.id]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -494,7 +500,7 @@ function AppShell() {
   const handleTouchEnd = () => {
     if (pullDistance > 90) {
       setIsRefreshing(true);
-      void loadPosts();
+      void refreshCommunityData();
       window.setTimeout(() => {
         setIsRefreshing(false);
         setPullDistance(0);

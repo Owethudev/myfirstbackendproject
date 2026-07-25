@@ -1,6 +1,9 @@
 import { VITE_API_BASE_URL } from "./config.ts";
 
-const API_BASE_URL = (VITE_API_BASE_URL ?? "/api").replace(/\/$/, "");
+const configuredBaseUrl = (VITE_API_BASE_URL ?? "").trim();
+const API_BASE_URL = import.meta.env.DEV
+  ? "/api"
+  : (configuredBaseUrl || "/api").replace(/\/$/, "");
 
 // This helper joins the server address and the route path.
 export const buildApiUrl = (path: string): string => {
