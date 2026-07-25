@@ -1,28 +1,18 @@
 import { type FormEvent, type Dispatch, type SetStateAction } from "react";
 import { motion } from "framer-motion";
 import { LogOut, Send, Trash2, X } from "lucide-react";
-import type {
-  EventForm,
-  PostForm,
-  ProfileForm,
-  UserProfile,
-} from "../types.ts";
+import type { EventForm, PostForm, UserProfile } from "../types.ts";
 
 type ProfileDrawerProps = {
   user: UserProfile;
   isOpen: boolean;
-  isEditing: boolean;
   activeFeed: "projects" | "events";
-  profileForm: ProfileForm;
   postForm: PostForm;
   eventForm: EventForm;
   message: string;
   onClose: () => void;
-  onToggleEditing: () => void;
-  onProfileFormChange: Dispatch<SetStateAction<ProfileForm>>;
   onPostFormChange: Dispatch<SetStateAction<PostForm>>;
   onEventFormChange: Dispatch<SetStateAction<EventForm>>;
-  onProfileSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onPostSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onEventSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onLogout: () => void;
@@ -32,24 +22,19 @@ type ProfileDrawerProps = {
 export function ProfileDrawer({
   user,
   isOpen,
-  isEditing,
   activeFeed,
-  profileForm,
   postForm,
   eventForm,
   message,
   onClose,
-  onToggleEditing,
-  onProfileFormChange,
   onPostFormChange,
   onEventFormChange,
-  onProfileSubmit,
   onPostSubmit,
   onEventSubmit,
   onLogout,
   onDeleteProfile,
 }: ProfileDrawerProps) {
-  // This drawer holds profile changes and the create-card that matches the current feed.
+  // This drawer holds profile information and the create-card that matches the current feed.
   const showProjectCard = activeFeed === "projects";
   const showEventCard = activeFeed === "events";
 
@@ -84,74 +69,6 @@ export function ProfileDrawer({
           <div className="rounded-[1.5rem] border border-[#2D1E2F]/10 bg-[#FFF8F0]/80 p-4 text-sm text-[#2D1E2F]">
             <p className="font-semibold">Email</p>
             <p className="text-[#2D1E2F]/70">{user.email}</p>
-          </div>
-
-          <div className="space-y-3 rounded-[1.5rem] border border-[#2D1E2F]/10 bg-[#FFF8F0]/80 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-[#2D1E2F]">
-                Profile actions
-              </p>
-              <button
-                type="button"
-                className="rounded-full border border-[#2D1E2F]/10 bg-[#FFF8F0] px-3 py-2 text-sm font-semibold text-[#2D1E2F]"
-                onClick={onToggleEditing}
-              >
-                {isEditing ? "Cancel" : "Edit"}
-              </button>
-            </div>
-            {isEditing ? (
-              <form onSubmit={onProfileSubmit} className="space-y-3">
-                <input
-                  placeholder="New username"
-                  value={profileForm.username}
-                  onChange={(event) =>
-                    onProfileFormChange({
-                      ...profileForm,
-                      username: event.target.value,
-                    })
-                  }
-                  className="w-full rounded-2xl border border-[#2D1E2F]/10 bg-[#FFF8F0] px-4 py-3 outline-none transition focus:border-[#EF476F] focus:ring-2 focus:ring-[#EF476F]/30"
-                />
-                <input
-                  placeholder="New email"
-                  type="email"
-                  value={profileForm.email}
-                  onChange={(event) =>
-                    onProfileFormChange({
-                      ...profileForm,
-                      email: event.target.value,
-                    })
-                  }
-                  className="w-full rounded-2xl border border-[#2D1E2F]/10 bg-[#FFF8F0] px-4 py-3 outline-none transition focus:border-[#EF476F] focus:ring-2 focus:ring-[#EF476F]/30"
-                />
-                <input
-                  placeholder="New password"
-                  type="password"
-                  value={profileForm.password}
-                  onChange={(event) =>
-                    onProfileFormChange({
-                      ...profileForm,
-                      password: event.target.value,
-                    })
-                  }
-                  className="w-full rounded-2xl border border-[#2D1E2F]/10 bg-[#FFF8F0] px-4 py-3 outline-none transition focus:border-[#EF476F] focus:ring-2 focus:ring-[#EF476F]/30"
-                />
-                <button
-                  type="submit"
-                  className="w-full rounded-2xl bg-[#2D1E2F] px-4 py-3 font-semibold text-[#FFF8F0]"
-                >
-                  Save profile
-                </button>
-              </form>
-            ) : (
-              <button
-                type="button"
-                className="w-full rounded-2xl border border-[#EF476F]/20 bg-[#EF476F]/10 px-4 py-3 text-sm font-semibold text-[#EF476F]"
-                onClick={onToggleEditing}
-              >
-                Edit profile
-              </button>
-            )}
           </div>
 
           {showProjectCard ? (
