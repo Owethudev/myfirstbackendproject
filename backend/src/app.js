@@ -1,5 +1,6 @@
 import express from "express";
 import authMiddleware from "./middleware/auth.middleware.js";
+import auditMiddleware from "./middleware/audit.middleware.js";
 
 // This file sets up the Express server, including middleware for JSON parsing and CORS headers, and connects the user, post, and event routes to their respective controllers.
 const app = express(); 
@@ -26,13 +27,16 @@ import authRouter from "./routes/auth.route.js";
 import userRouter from "./routes/user.route.js";
 import postRouter from "./routes/post.route.js";
 import eventPostRouter from "./routes/eventpost.route.js";
+import auditRouter from "./routes/audit.route.js";
 
 app.use(authMiddleware);
+app.use(auditMiddleware);
 
 // These lines connect paths to their handlers.
 app.use("/api/auth", authRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/posts", postRouter);
 app.use("/api/v1/events", eventPostRouter);
+app.use("/api/v1/audit", auditRouter);
 
 export default app;

@@ -35,8 +35,26 @@ const createEventPost = async (req, res) => {
 // This sends all saved events to the event feed.
 const getEventPosts = async (req, res) => {
 	try {
-		const events = await EventPost.find();
-		return res.status(200).json(events);
+		const { page = "1", limit = "12" } = req.query;
+		const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+		const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 12, 1), 100);
+		const skip = (parsedPage - 1) * parsedLimit;
+
+		const totalItems = await EventPost.countDocuments();
+		const events = await EventPost.find()
+			.sort({ createdAt: -1 })
+			.skip(skip)
+			.limit(parsedLimit);
+
+		const totalPages = Math.max(Math.ceil(totalItems / parsedLimit), 1);
+
+		return res.status(200).json({
+			currentPage: parsedPage,
+			totalPages,
+			totalItems,
+			hasNextPage: parsedPage < totalPages,
+			items: events,
+		});
 	} catch (error) {
 		return res.status(500).json({
 			message: "Internal server error",

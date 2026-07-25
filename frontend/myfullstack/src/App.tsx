@@ -41,6 +41,14 @@ const EMPTY_EVENT_FORM: EventForm = {
   time: "",
 };
 
+type PaginatedResponse<T> = {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  hasNextPage: boolean;
+  items: T[];
+};
+
 const getStoredUser = (): UserProfile | null => {
   try {
     const raw = localStorage.getItem("snpl_user");
@@ -93,6 +101,11 @@ function AppShell() {
     "projects",
   );
   const [feedLayout, setFeedLayout] = useState<"current" | "grid">("current");
+  const [postPage, setPostPage] = useState(1);
+  const [eventPage, setEventPage] = useState(1);
+  const [hasMorePosts, setHasMorePosts] = useState(false);
+  const [hasMoreEvents, setHasMoreEvents] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchScope, setSearchScope] = useState<"projects" | "events">(
     "projects",
@@ -119,38 +132,64 @@ function AppShell() {
       .some((value) => String(value).toLowerCase().includes(normalizedSearch));
   });
 
-  const loadPosts = async () => {
+  const loadPosts = async (page = 1, append = false) => {
     try {
-      const response = await fetch(buildApiUrl("/api/v1/posts/getPosts"));
-      const data = await response.json().catch(() => []);
-      if (response.ok) {
-        setPosts(Array.isArray(data) ? data : []);
+      const response = await fetch(
+        buildApiUrl(`/api/v1/posts/getPosts?page=${page}&limit=6`),
+      );
+      const data = await response
+        .json()
+        .catch(() => ({}) as PaginatedResponse<PostItem>);
+
+      if (response.ok && Array.isArray(data.items)) {
+        setPosts((current) =>
+          append ? [...current, ...data.items] : data.items,
+        );
+        setPostPage(data.currentPage);
+        setHasMorePosts(data.hasNextPage);
       } else {
         setPosts([]);
+        setPostPage(1);
+        setHasMorePosts(false);
       }
     } catch (error) {
       console.error("Failed to load posts", error);
       setPosts([]);
+      setPostPage(1);
+      setHasMorePosts(false);
     }
   };
 
-  const loadEvents = async () => {
+  const loadEvents = async (page = 1, append = false) => {
     try {
-      const response = await fetch(buildApiUrl("/api/v1/events/getEvents"));
-      const data = await response.json().catch(() => []);
-      if (response.ok) {
-        setEvents(Array.isArray(data) ? data : []);
+      const response = await fetch(
+        buildApiUrl(`/api/v1/events/getEvents?page=${page}&limit=12`),
+      );
+      const data = await response
+        .json()
+        .catch(() => ({}) as PaginatedResponse<EventItem>);
+
+      if (response.ok && Array.isArray(data.items)) {
+        setEvents((current) =>
+          append ? [...current, ...data.items] : data.items,
+        );
+        setEventPage(data.currentPage);
+        setHasMoreEvents(data.hasNextPage);
       } else {
         setEvents([]);
+        setEventPage(1);
+        setHasMoreEvents(false);
       }
     } catch (error) {
       console.error("Failed to load events", error);
       setEvents([]);
+      setEventPage(1);
+      setHasMoreEvents(false);
     }
   };
 
   const refreshCommunityData = async () => {
-    await Promise.all([loadPosts(), loadEvents()]);
+    await Promise.all([loadPosts(1), loadEvents(1)]);
   };
 
   useEffect(() => {
@@ -573,21 +612,55 @@ function AppShell() {
               onDeleteProfile={handleDeleteProfile}
             />
             {activeFeed === "projects" ? (
-              <Feed
-                posts={filteredPosts}
-                user={user}
-                viewMode={feedLayout}
-                onViewModeChange={setFeedLayout}
-                onDeletePost={handleDeletePost}
-              />
+              <>
+                <Feed
+                  posts={filteredPosts}
+                  user={user}
+                  viewMode={feedLayout}
+                  onViewModeChange={setFeedLayout}
+                  onDeletePost={handleDeletePost}
+                />
+                {hasMorePosts ? (
+                  <div className="mt-6 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setLoadingMore(true);
+                        await loadPosts(postPage + 1, true);
+                        setLoadingMore(false);
+                      }}
+                      className="rounded-full border border-[#2D1E2F]/10 bg-white px-5 py-2 text-sm font-semibold text-[#2D1E2F] shadow-sm transition hover:bg-[#FFF8F0]"
+                    >
+                      {loadingMore ? "Loading..." : "Load more"}
+                    </button>
+                  </div>
+                ) : null}
+              </>
             ) : (
-              <EventFeed
-                events={filteredEvents}
-                user={user}
-                viewMode={feedLayout}
-                onViewModeChange={setFeedLayout}
-                onDeleteEvent={handleDeleteEvent}
-              />
+              <>
+                <EventFeed
+                  events={filteredEvents}
+                  user={user}
+                  viewMode={feedLayout}
+                  onViewModeChange={setFeedLayout}
+                  onDeleteEvent={handleDeleteEvent}
+                />
+                {hasMoreEvents ? (
+                  <div className="mt-6 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setLoadingMore(true);
+                        await loadEvents(eventPage + 1, true);
+                        setLoadingMore(false);
+                      }}
+                      className="rounded-full border border-[#2D1E2F]/10 bg-white px-5 py-2 text-sm font-semibold text-[#2D1E2F] shadow-sm transition hover:bg-[#FFF8F0]"
+                    >
+                      {loadingMore ? "Loading..." : "Load more"}
+                    </button>
+                  </div>
+                ) : null}
+              </>
             )}
           </>
         )}

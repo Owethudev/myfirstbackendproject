@@ -40,6 +40,23 @@ type ModerationPost = {
   moderationStatus?: string;
 };
 
+type AuditLogEntry = {
+  _id: string;
+  timestamp: string;
+  userId: string | null;
+  username: string | null;
+  email: string | null;
+  role: string;
+  method: string;
+  path: string;
+  statusCode: number | null;
+  durationMs: number | null;
+  ipAddress: string | null;
+  query: Record<string, unknown>;
+  params: Record<string, unknown>;
+  body: Record<string, unknown>;
+};
+
 function getStoredUser(): UserProfile | null {
   try {
     const raw = localStorage.getItem("snpl_user");
@@ -55,6 +72,11 @@ export function AdminDashboard() {
   const [stats, setStats] = useState<AdminStats>(DEFAULT_STATS);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [reportedPosts, setReportedPosts] = useState<ModerationPost[]>([]);
+  const [selectedTab, setSelectedTab] = useState<
+    "overview" | "users" | "reports" | "audit"
+  >("overview");
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -100,7 +122,7 @@ export function AdminDashboard() {
       try {
         const response = await fetch(
           buildApiUrl(
-            `/api/v1/users/list?search=${encodeURIComponent(search)}`,
+            `/api/v1/users/list?page=1&limit=20&search=${encodeURIComponent(search)}`,
           ),
           {
             headers: {
@@ -109,12 +131,14 @@ export function AdminDashboard() {
           },
         );
 
-        const data = await response.json().catch(() => []);
+        const data = await response
+          .json()
+          .catch(() => ({}) as { items?: unknown[] });
         if (!response.ok) {
           throw new Error(data.message || "Unable to load users");
         }
 
-        setUsers(data);
+        setUsers(Array.isArray(data.items) ? data.items : []);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unable to load users");
       }
@@ -122,18 +146,23 @@ export function AdminDashboard() {
 
     const loadReportedPosts = async () => {
       try {
-        const response = await fetch(buildApiUrl("/api/v1/posts/reported"), {
-          headers: {
-            Authorization: `Bearer ${token}`,
+        const response = await fetch(
+          buildApiUrl("/api/v1/posts/reported?page=1&limit=20"),
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           },
-        });
+        );
 
-        const data = await response.json().catch(() => []);
+        const data = await response
+          .json()
+          .catch(() => ({}) as { items?: unknown[] });
         if (!response.ok) {
           throw new Error(data.message || "Unable to load reported posts");
         }
 
-        setReportedPosts(data);
+        setReportedPosts(Array.isArray(data.items) ? data.items : []);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Unable to load reported posts",
@@ -265,6 +294,46 @@ export function AdminDashboard() {
     }
   };
 
+  const loadAuditLogs = async () => {
+    setLoadingAudit(true);
+    setError("");
+
+    try {
+      const response = await fetch(buildApiUrl("/api/v1/audit?limit=100"), {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("snpl_token") || ""}`,
+        },
+      });
+
+      const data = await response.json().catch(
+        () =>
+          ({}) as {
+            success?: boolean;
+            data?: AuditLogEntry[];
+            message?: string;
+          },
+      );
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Unable to load audit logs");
+      }
+
+      setAuditLogs(Array.isArray(data.data) ? data.data : []);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to load audit logs",
+      );
+    } finally {
+      setLoadingAudit(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedTab === "audit") {
+      void loadAuditLogs();
+    }
+  }, [selectedTab]);
+
   return (
     <div className="min-h-screen bg-[#FFF8F0] p-6 text-[#2D1E2F]">
       <div className="mx-auto max-w-6xl">
@@ -284,6 +353,28 @@ export function AdminDashboard() {
           </button>
         </div>
 
+        <div className="mb-6 flex flex-wrap gap-2">
+          {[
+            { label: "Overview", value: "overview" },
+            { label: "User management", value: "users" },
+            { label: "Reports", value: "reports" },
+            { label: "Audit logs", value: "audit" },
+          ].map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setSelectedTab(tab.value as typeof selectedTab)}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                selectedTab === tab.value
+                  ? "border bg-[#2D1E2F] text-white"
+                  : "border border-[#2D1E2F]/10 bg-white text-[#2D1E2F]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {loading ? (
           <p className="text-sm text-[#2D1E2F]/70">Loading dashboard…</p>
         ) : error ? (
@@ -292,183 +383,260 @@ export function AdminDashboard() {
           </div>
         ) : (
           <>
-            <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <div className="rounded-2xl border border-[#2D1E2F]/10 bg-white p-5 shadow-sm">
-                <p className="text-sm font-medium text-[#2D1E2F]/60">
-                  Total users
-                </p>
-                <p className="mt-2 text-3xl font-semibold">
-                  {stats.totalUsers}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-[#2D1E2F]/10 bg-white p-5 shadow-sm">
-                <p className="text-sm font-medium text-[#2D1E2F]/60">
-                  Verified users
-                </p>
-                <p className="mt-2 text-3xl font-semibold">
-                  {stats.verifiedUsers}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-[#2D1E2F]/10 bg-white p-5 shadow-sm">
-                <p className="text-sm font-medium text-[#2D1E2F]/60">
-                  Unverified users
-                </p>
-                <p className="mt-2 text-3xl font-semibold">
-                  {stats.unverifiedUsers}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-[#2D1E2F]/10 bg-white p-5 shadow-sm">
-                <p className="text-sm font-medium text-[#2D1E2F]/60">
-                  Total posts
-                </p>
-                <p className="mt-2 text-3xl font-semibold">
-                  {stats.totalPosts}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-[#2D1E2F]/10 bg-white p-5 shadow-sm">
-                <p className="text-sm font-medium text-[#2D1E2F]/60">
-                  Total comments
-                </p>
-                <p className="mt-2 text-3xl font-semibold">
-                  {stats.totalComments}
-                </p>
-              </div>
-            </div>
-
-            <div className="mb-6 rounded-2xl border border-[#2D1E2F]/10 bg-white p-5 shadow-sm">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-semibold">User management</h2>
-                  <p className="text-sm text-[#2D1E2F]/60">
-                    Search, suspend, and change roles.
+            {selectedTab === "overview" && (
+              <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="rounded-2xl border border-[#2D1E2F]/10 bg-white p-5 shadow-sm">
+                  <p className="text-sm font-medium text-[#2D1E2F]/60">
+                    Total users
+                  </p>
+                  <p className="mt-2 text-3xl font-semibold">
+                    {stats.totalUsers}
                   </p>
                 </div>
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search users"
-                  className="rounded-full border border-[#2D1E2F]/10 px-3 py-2 text-sm outline-none"
-                />
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-[#2D1E2F]/10 text-[#2D1E2F]/70">
-                      <th className="px-2 py-2">User</th>
-                      <th className="px-2 py-2">Role</th>
-                      <th className="px-2 py-2">Status</th>
-                      <th className="px-2 py-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((user) => (
-                      <tr
-                        key={user._id}
-                        className="border-b border-[#2D1E2F]/5"
-                      >
-                        <td className="px-2 py-3">
-                          <div className="font-semibold">{user.username}</div>
-                          <div className="text-xs text-[#2D1E2F]/60">
-                            {user.email}
-                          </div>
-                        </td>
-                        <td className="px-2 py-3">{user.role}</td>
-                        <td className="px-2 py-3">
-                          {user.suspended
-                            ? "Suspended"
-                            : user.verified
-                              ? "Active"
-                              : "Pending"}
-                        </td>
-                        <td className="px-2 py-3">
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleToggleSuspend(user._id, user.suspended)
-                              }
-                              className="rounded-full border border-[#2D1E2F]/10 px-3 py-1 text-xs font-semibold"
-                            >
-                              {user.suspended ? "Reactivate" : "Suspend"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleRoleChange(user._id, user.role)
-                              }
-                              className="rounded-full border border-[#2D1E2F]/10 px-3 py-1 text-xs font-semibold"
-                            >
-                              {user.role === "admin"
-                                ? "Make user"
-                                : "Make admin"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteUser(user._id)}
-                              className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-600"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-[#2D1E2F]/10 bg-white p-5 shadow-sm">
-              <div className="mb-4">
-                <h2 className="text-xl font-semibold">Content moderation</h2>
-                <p className="text-sm text-[#2D1E2F]/60">
-                  Review reported posts and remove inappropriate content.
-                </p>
-              </div>
-
-              {reportedPosts.length === 0 ? (
-                <p className="text-sm text-[#2D1E2F]/60">
-                  No reported content at the moment.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {reportedPosts.map((post) => (
-                    <div
-                      key={post._id}
-                      className="rounded-xl border border-[#2D1E2F]/10 p-4"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <h3 className="font-semibold">{post.name}</h3>
-                          <p className="mt-1 text-sm text-[#2D1E2F]/70">
-                            {post.description}
-                          </p>
-                          {post.reportReason ? (
-                            <p className="mt-2 text-xs font-medium text-red-600">
-                              Reason: {post.reportReason}
-                            </p>
-                          ) : null}
-                          {post.author ? (
-                            <p className="mt-1 text-xs text-[#2D1E2F]/60">
-                              By {post.author}
-                            </p>
-                          ) : null}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemovePost(post._id)}
-                          className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-600"
-                        >
-                          Remove post
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                <div className="rounded-2xl border border-[#2D1E2F]/10 bg-white p-5 shadow-sm">
+                  <p className="text-sm font-medium text-[#2D1E2F]/60">
+                    Verified users
+                  </p>
+                  <p className="mt-2 text-3xl font-semibold">
+                    {stats.verifiedUsers}
+                  </p>
                 </div>
-              )}
-            </div>
+                <div className="rounded-2xl border border-[#2D1E2F]/10 bg-white p-5 shadow-sm">
+                  <p className="text-sm font-medium text-[#2D1E2F]/60">
+                    Unverified users
+                  </p>
+                  <p className="mt-2 text-3xl font-semibold">
+                    {stats.unverifiedUsers}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-[#2D1E2F]/10 bg-white p-5 shadow-sm">
+                  <p className="text-sm font-medium text-[#2D1E2F]/60">
+                    Total posts
+                  </p>
+                  <p className="mt-2 text-3xl font-semibold">
+                    {stats.totalPosts}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-[#2D1E2F]/10 bg-white p-5 shadow-sm">
+                  <p className="text-sm font-medium text-[#2D1E2F]/60">
+                    Total comments
+                  </p>
+                  <p className="mt-2 text-3xl font-semibold">
+                    {stats.totalComments}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {selectedTab === "users" && (
+              <div className="mb-6 rounded-2xl border border-[#2D1E2F]/10 bg-white p-5 shadow-sm">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-xl font-semibold">User management</h2>
+                    <p className="text-sm text-[#2D1E2F]/60">
+                      Search, suspend, and change roles.
+                    </p>
+                  </div>
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search users"
+                    className="rounded-full border border-[#2D1E2F]/10 px-3 py-2 text-sm outline-none"
+                  />
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-[#2D1E2F]/10 text-[#2D1E2F]/70">
+                        <th className="px-2 py-2">User</th>
+                        <th className="px-2 py-2">Role</th>
+                        <th className="px-2 py-2">Status</th>
+                        <th className="px-2 py-2">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map((user) => (
+                        <tr
+                          key={user._id}
+                          className="border-b border-[#2D1E2F]/5"
+                        >
+                          <td className="px-2 py-3">
+                            <div className="font-semibold">{user.username}</div>
+                            <div className="text-xs text-[#2D1E2F]/60">
+                              {user.email}
+                            </div>
+                          </td>
+                          <td className="px-2 py-3">{user.role}</td>
+                          <td className="px-2 py-3">
+                            {user.suspended
+                              ? "Suspended"
+                              : user.verified
+                                ? "Active"
+                                : "Pending"}
+                          </td>
+                          <td className="px-2 py-3">
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleToggleSuspend(user._id, user.suspended)
+                                }
+                                className="rounded-full border border-[#2D1E2F]/10 px-3 py-1 text-xs font-semibold"
+                              >
+                                {user.suspended ? "Reactivate" : "Suspend"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleRoleChange(user._id, user.role)
+                                }
+                                className="rounded-full border border-[#2D1E2F]/10 px-3 py-1 text-xs font-semibold"
+                              >
+                                {user.role === "admin"
+                                  ? "Make user"
+                                  : "Make admin"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteUser(user._id)}
+                                className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-600"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {selectedTab === "reports" && (
+              <div className="rounded-2xl border border-[#2D1E2F]/10 bg-white p-5 shadow-sm">
+                <div className="mb-4">
+                  <h2 className="text-xl font-semibold">Content moderation</h2>
+                  <p className="text-sm text-[#2D1E2F]/60">
+                    Review reported posts and remove inappropriate content.
+                  </p>
+                </div>
+
+                {reportedPosts.length === 0 ? (
+                  <p className="text-sm text-[#2D1E2F]/60">
+                    No reported content at the moment.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {reportedPosts.map((post) => (
+                      <div
+                        key={post._id}
+                        className="rounded-xl border border-[#2D1E2F]/10 p-4"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <h3 className="font-semibold">{post.name}</h3>
+                            <p className="mt-1 text-sm text-[#2D1E2F]/70">
+                              {post.description}
+                            </p>
+                            {post.reportReason ? (
+                              <p className="mt-2 text-xs font-medium text-red-600">
+                                Reason: {post.reportReason}
+                              </p>
+                            ) : null}
+                            {post.author ? (
+                              <p className="mt-1 text-xs text-[#2D1E2F]/60">
+                                By {post.author}
+                              </p>
+                            ) : null}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePost(post._id)}
+                            className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-600"
+                          >
+                            Remove post
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedTab === "audit" && (
+              <div className="rounded-2xl border border-[#2D1E2F]/10 bg-white p-5 shadow-sm">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-xl font-semibold">Audit logs</h2>
+                    <p className="text-sm text-[#2D1E2F]/60">
+                      Recent admin activity and request history.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={loadAuditLogs}
+                    className="rounded-full border border-[#2D1E2F]/10 bg-white px-4 py-2 text-sm font-semibold text-[#2D1E2F]"
+                  >
+                    Refresh
+                  </button>
+                </div>
+                {loadingAudit ? (
+                  <p className="text-sm text-[#2D1E2F]/70">
+                    Loading audit logs…
+                  </p>
+                ) : auditLogs.length === 0 ? (
+                  <p className="text-sm text-[#2D1E2F]/60">
+                    No audit logs available.
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-left text-sm">
+                      <thead>
+                        <tr className="border-b border-[#2D1E2F]/10 text-[#2D1E2F]/70">
+                          <th className="px-2 py-2">Time</th>
+                          <th className="px-2 py-2">User</th>
+                          <th className="px-2 py-2">Action</th>
+                          <th className="px-2 py-2">Path</th>
+                          <th className="px-2 py-2">Status</th>
+                          <th className="px-2 py-2">Duration</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {auditLogs.map((entry) => (
+                          <tr
+                            key={entry._id}
+                            className="border-b border-[#2D1E2F]/5"
+                          >
+                            <td className="px-2 py-3">
+                              {new Date(entry.timestamp).toLocaleString()}
+                            </td>
+                            <td className="px-2 py-3">
+                              {entry.username ?? entry.email ?? "Guest"}
+                            </td>
+                            <td className="px-2 py-3">{entry.method}</td>
+                            <td className="px-2 py-3 truncate max-w-[240px]">
+                              {entry.path}
+                            </td>
+                            <td className="px-2 py-3">
+                              {entry.statusCode ?? "-"}
+                            </td>
+                            <td className="px-2 py-3">
+                              {entry.durationMs != null
+                                ? `${entry.durationMs} ms`
+                                : "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>
