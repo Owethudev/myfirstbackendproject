@@ -51,7 +51,11 @@ const loginUser = async (req, res) => {
 // This logs out a user by simply acknowledging the request.
 const logoutUser = async (req, res) => {
     try {
-        const result = await logoutUserService(req.body.email);
+        const result = await logoutUserService(
+            req.body.email,
+            req.body.sessionId || req.body.session_id || req.headers["x-session-id"],
+            Boolean(req.body.logoutAll || req.body.logout_all),
+        );
         return res.status(result.statusCode).json(result.payload);
     } catch (error) {
         return handleControllerError(res, error, "Unable to log out");

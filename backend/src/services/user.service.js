@@ -1,11 +1,10 @@
-import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { User } from "../models/user.model.js";
 import { Post } from "../models/post.model.js";
 import { sendVerificationEmail } from "../config/email.js";
 import { createError, createResult } from "../utils/controllerResponse.js";
-
-const JWT_SECRET = process.env.JWT_SECRET || "wookiepookiebear";
+import { signAccessToken } from "../utils/auth.js";
+import { createSession, revokeAllUserSessions, revokeSession } from "../services/session.service.js";
 
 const normalizeEmail = (email) => (typeof email === "string" ? email.trim().toLowerCase() : "");
 
@@ -103,20 +102,17 @@ const loginUser = async ({ email, password }) => {
     return createError(403, "Please verify your email before logging in");
   }
 
-  const token = jwt.sign(
-    {
-      id: user._id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-    },
-    JWT_SECRET,
-    { expiresIn: "1d" }
-  );
+  if (user.suspended) {
+    return createError(403, "Account suspended.");
+  }
+
+  const session = await createSession({ userId: user._id, userAgent: "", ipAddress: "" });
+  const token = signAccessToken(user, session.sessionId);
 
   return createResult(200, {
     message: "User logged in successfully",
     token,
+    sessionId: session.sessionId,
     user: {
       id: user._id,
       username: user.username,
@@ -126,7 +122,7 @@ const loginUser = async ({ email, password }) => {
   });
 };
 
-const logoutUser = async (email) => {
+const logoutUser = async (email, sessionId, logoutAll = false) => {
   if (!email) {
     return createError(400, "Email is required");
   }
@@ -134,6 +130,12 @@ const logoutUser = async (email) => {
   const user = await User.findOne({ email: normalizeEmail(email) });
   if (!user) {
     return createError(400, "User does not exist");
+  }
+
+  if (logoutAll || !sessionId) {
+    await revokeAllUserSessions(user._id);
+  } else {
+    await revokeSession(sessionId);
   }
 
   return createResult(200, { message: "User logged out successfully" });

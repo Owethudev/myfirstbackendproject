@@ -6,11 +6,11 @@ import authorize from "../middleware/authorize.middleware.js";
 const router = Router(); 
 
 // These are the four project post paths that the frontend can use to create, get, update, and delete posts.
-router.route("/create").post(createPost);
+router.route("/create").post(authorize("user", "admin"), createPost);
 router.route("/getPosts").get(getPosts);
 router.route("/reported").get(authorize("admin"), getReportedPosts);
 router.route("/review/:id").patch(authorize("admin"), reviewPost);
-router.route("/update/:id").patch(updatePost);
-router.route("/delete/:id").delete(deletePost);
+router.route("/update/:id").patch(authorize("user", "admin"), updatePost);
+router.route("/delete/:id").delete(authorize("user", "admin"), deletePost);
 router.route("/admin-delete/:id").delete(authorize("admin"), adminDeletePost);
 export default router;

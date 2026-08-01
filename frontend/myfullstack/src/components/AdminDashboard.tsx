@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { UserProfile } from "../types.ts";
-import { buildApiUrl } from "../api.ts";
+import { authService } from "../services/authService.ts";
 
 type AdminStats = {
   totalUsers: number;
@@ -97,18 +97,8 @@ export function AdminDashboard() {
 
     const loadStats = async () => {
       try {
-        const response = await fetch(buildApiUrl("/api/v1/users/stats"), {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          throw new Error(data.message || "Unable to load admin statistics");
-        }
-
-        setStats(data);
+        const data = await authService.fetchJson("/api/v1/users/stats");
+        setStats(data as AdminStats);
       } catch (err) {
         setError(
           err instanceof Error
@@ -120,25 +110,14 @@ export function AdminDashboard() {
 
     const loadUsers = async () => {
       try {
-        const response = await fetch(
-          buildApiUrl(
-            `/api/v1/users/list?page=1&limit=20&search=${encodeURIComponent(search)}`,
-          ),
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
+        const data = await authService.fetchJson(
+          `/api/v1/users/list?page=1&limit=20&search=${encodeURIComponent(search)}`,
         );
 
-        const data = await response
-          .json()
-          .catch(() => ({}) as { items?: unknown[] });
-        if (!response.ok) {
-          throw new Error(data.message || "Unable to load users");
-        }
-
-        setUsers(Array.isArray(data.items) ? data.items : []);
+        const responseItems = (data as { items?: unknown[] }).items ?? [];
+        setUsers(
+          Array.isArray(responseItems) ? (responseItems as AdminUser[]) : [],
+        );
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unable to load users");
       }
@@ -146,23 +125,16 @@ export function AdminDashboard() {
 
     const loadReportedPosts = async () => {
       try {
-        const response = await fetch(
-          buildApiUrl("/api/v1/posts/reported?page=1&limit=20"),
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
+        const data = await authService.fetchJson(
+          "/api/v1/posts/reported?page=1&limit=20",
         );
 
-        const data = await response
-          .json()
-          .catch(() => ({}) as { items?: unknown[] });
-        if (!response.ok) {
-          throw new Error(data.message || "Unable to load reported posts");
-        }
-
-        setReportedPosts(Array.isArray(data.items) ? data.items : []);
+        const responseItems = (data as { items?: unknown[] }).items ?? [];
+        setReportedPosts(
+          Array.isArray(responseItems)
+            ? (responseItems as ModerationPost[])
+            : [],
+        );
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Unable to load reported posts",
@@ -179,22 +151,13 @@ export function AdminDashboard() {
 
   const handleToggleSuspend = async (userId: string, suspended: boolean) => {
     try {
-      const response = await fetch(
-        buildApiUrl(`/api/v1/users/status/${userId}`),
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("snpl_token") || ""}`,
-          },
-          body: JSON.stringify({ suspended: !suspended }),
+      await authService.fetchJson(`/api/v1/users/status/${userId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Unable to update user status");
-      }
+        body: JSON.stringify({ suspended: !suspended }),
+      });
 
       setUsers((current) =>
         current.map((item) =>
@@ -212,22 +175,13 @@ export function AdminDashboard() {
     const nextRole = currentRole === "admin" ? "user" : "admin";
 
     try {
-      const response = await fetch(
-        buildApiUrl(`/api/v1/users/role/${userId}`),
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("snpl_token") || ""}`,
-          },
-          body: JSON.stringify({ role: nextRole }),
+      await authService.fetchJson(`/api/v1/users/role/${userId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Unable to update user role");
-      }
+        body: JSON.stringify({ role: nextRole }),
+      });
 
       setUsers((current) =>
         current.map((item) =>
@@ -246,19 +200,13 @@ export function AdminDashboard() {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(buildApiUrl("/api/v1/users/delete"), {
+      await authService.fetchJson("/api/v1/users/delete", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("snpl_token") || ""}`,
         },
         body: JSON.stringify({ id: userId }),
       });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Unable to delete user");
-      }
 
       setUsers((current) => current.filter((item) => item._id !== userId));
     } catch (err) {
@@ -271,20 +219,9 @@ export function AdminDashboard() {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(
-        buildApiUrl(`/api/v1/posts/admin-delete/${postId}`),
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("snpl_token") || ""}`,
-          },
-        },
-      );
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Unable to remove post");
-      }
+      await authService.fetchJson(`/api/v1/posts/admin-delete/${postId}`, {
+        method: "DELETE",
+      });
 
       setReportedPosts((current) =>
         current.filter((item) => item._id !== postId),
@@ -299,22 +236,13 @@ export function AdminDashboard() {
     setError("");
 
     try {
-      const response = await fetch(buildApiUrl("/api/v1/audit?limit=100"), {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("snpl_token") || ""}`,
-        },
-      });
+      const data = (await authService.fetchJson("/api/v1/audit?limit=100")) as {
+        success?: boolean;
+        data?: AuditLogEntry[];
+        message?: string;
+      };
 
-      const data = await response.json().catch(
-        () =>
-          ({}) as {
-            success?: boolean;
-            data?: AuditLogEntry[];
-            message?: string;
-          },
-      );
-
-      if (!response.ok || !data.success) {
+      if (!data.success) {
         throw new Error(data.message || "Unable to load audit logs");
       }
 

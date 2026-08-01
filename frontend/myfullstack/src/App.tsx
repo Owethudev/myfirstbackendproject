@@ -17,6 +17,14 @@ import { Header } from "./components/Header.tsx";
 import { ProfileDrawer } from "./components/ProfileDrawer.tsx";
 import { ResetPasswordPage } from "./components/ResetPasswordPage.tsx";
 import { buildApiUrl } from "./api.ts";
+import { authService } from "./services/authService.ts";
+import {
+  clearAuthState,
+  getSessionMessage,
+  getStoredUser,
+} from "./services/sessionManager.ts";
+import { useAuth } from "./hooks/useAuth.ts";
+import { useSessionTimeout } from "./hooks/useSessionTimeout.ts";
 const AdminDashboard = lazy(() =>
   import("./components/AdminDashboard.tsx").then((module) => ({
     default: module.AdminDashboard,
@@ -29,7 +37,6 @@ import type {
   EventItem,
   PostForm,
   PostItem,
-  UserProfile,
 } from "./types.ts";
 
 const EMPTY_AUTH_FORM: AuthForm = {
@@ -59,41 +66,11 @@ type PaginatedResponse<T> = {
   items: T[];
 };
 
-const getStoredUser = (): UserProfile | null => {
-  try {
-    const raw = localStorage.getItem("snpl_user");
-    return raw ? (JSON.parse(raw) as UserProfile) : null;
-  } catch (error) {
-    console.error("failed reading local user", error);
-    return null;
-  }
-};
-
-const clearAuthState = (
-  setUser: (value: UserProfile | null) => void,
-  setMode: (value: AuthMode) => void,
-  setForm: (value: AuthForm) => void,
-  setMessage: (value: string) => void,
-  setIsProfileMenuOpen: (value: boolean) => void,
-) => {
-  setUser(null);
-  try {
-    localStorage.removeItem("snpl_user");
-  } catch (error) {
-    console.error("failed clearing stored user", error);
-  }
-  setMode("login");
-  setForm(EMPTY_AUTH_FORM);
-  setIsProfileMenuOpen(false);
-  setMessage("");
-};
-
 function AppShell() {
   const [mode, setMode] = useState<AuthMode>("login");
   const [form, setForm] = useState<AuthForm>(EMPTY_AUTH_FORM);
-  const [message, setMessage] = useState("");
-  // This reads the saved user before the page starts, so refresh keeps the login.
-  const [user, setUser] = useState<UserProfile | null>(getStoredUser);
+  const { user, token, message, signOut, setMessage } = useAuth();
+  const [localMessage, setLocalMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -118,8 +95,25 @@ function AppShell() {
   );
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
+  useSessionTimeout(Boolean(user && token), () => {
+    signOut("Your session has expired. Please log in again.");
+  });
+
   const selectFeed = (feed: "projects" | "events") => {
     setActiveFeed(feed);
+  };
+
+  const resetAuthState = (nextMessage = "", shouldResetForm = true) => {
+    setMode("login");
+    if (shouldResetForm) {
+      setForm(EMPTY_AUTH_FORM);
+    }
+    setIsProfileMenuOpen(false);
+    setLocalMessage(nextMessage);
+    setMessage(nextMessage);
+    if (!nextMessage) {
+      clearAuthState();
+    }
   };
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -234,32 +228,29 @@ function AppShell() {
       }
 
       if (mode === "signup") {
-        clearAuthState(
-          setUser,
-          setMode,
-          setForm,
-          setMessage,
-          setIsProfileMenuOpen,
-        );
-        setMessage(
+        resetAuthState(
           data.message ||
             "Account created. Please verify your email before logging in.",
         );
         return;
       }
 
-      setUser(data.user);
-      // This saves the user so a refresh does not log out.
-      try {
+      if (data.user) {
+        setLocalMessage(data.message || "");
+        setMessage(data.message || "");
         localStorage.setItem("snpl_user", JSON.stringify(data.user));
         if (data.token) {
           localStorage.setItem("snpl_token", data.token);
         }
-      } catch (error) {
-        console.error("failed persisting user", error);
+        if (data.sessionId) {
+          localStorage.setItem("snpl_session_id", data.sessionId);
+        }
+        window.dispatchEvent(new Event("auth:state-changed"));
       }
-      setMessage(data.message);
     } catch (error) {
+      setLocalMessage(
+        error instanceof Error ? error.message : "Something went wrong",
+      );
       setMessage(
         error instanceof Error ? error.message : "Something went wrong",
       );
@@ -292,6 +283,7 @@ function AppShell() {
 
       setPostForm(EMPTY_POST_FORM);
       await loadPosts();
+      setLocalMessage(data.message || "Post created successfully");
       setMessage(data.message || "Post created successfully");
     } catch (error) {
       console.error("handlePostSubmit error:", error);
@@ -325,6 +317,7 @@ function AppShell() {
 
       setEventForm(EMPTY_EVENT_FORM);
       await loadEvents();
+      setLocalMessage(data.message || "Event created successfully");
       setMessage(data.message || "Event created successfully");
     } catch (error) {
       setMessage(
@@ -335,45 +328,38 @@ function AppShell() {
 
   const handleLogout = async () => {
     if (!user) {
-      clearAuthState(
-        setUser,
-        setMode,
-        setForm,
-        setMessage,
-        setIsProfileMenuOpen,
-      );
+      resetAuthState();
       return;
     }
 
     try {
-      const response = await fetch(buildApiUrl("/api/v1/users/logout"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email }),
-      });
-
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        console.warn("Logout request failed, forcing local sign-out", data);
-      }
-
-      clearAuthState(
-        setUser,
-        setMode,
-        setForm,
-        setMessage,
-        setIsProfileMenuOpen,
-      );
-      setMessage(data.message || "You have been logged out.");
+      await authService.logout();
+      resetAuthState("You have been logged out.");
     } catch (error) {
-      clearAuthState(
-        setUser,
-        setMode,
-        setForm,
-        setMessage,
-        setIsProfileMenuOpen,
+      resetAuthState(error instanceof Error ? error.message : "Logout failed");
+    }
+  };
+
+  const handleLogoutEverywhere = async () => {
+    if (!user) {
+      resetAuthState();
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "This will sign you out from all devices and sessions. Continue?",
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await authService.logout({ logoutAll: true });
+      resetAuthState("You have been logged out from all sessions.");
+    } catch (error) {
+      resetAuthState(
+        error instanceof Error ? error.message : "Logout everywhere failed",
       );
-      setMessage(error instanceof Error ? error.message : "Logout failed");
     }
   };
 
@@ -430,13 +416,7 @@ function AppShell() {
 
   const handleDeleteProfile = async () => {
     if (!user) {
-      clearAuthState(
-        setUser,
-        setMode,
-        setForm,
-        setMessage,
-        setIsProfileMenuOpen,
-      );
+      resetAuthState();
       return;
     }
 
@@ -460,23 +440,9 @@ function AppShell() {
         );
       }
 
-      clearAuthState(
-        setUser,
-        setMode,
-        setForm,
-        setMessage,
-        setIsProfileMenuOpen,
-      );
-      setMessage(data.message || "Profile deleted.");
+      resetAuthState(data.message || "Profile deleted.");
     } catch (error) {
-      clearAuthState(
-        setUser,
-        setMode,
-        setForm,
-        setMessage,
-        setIsProfileMenuOpen,
-      );
-      setMessage(error instanceof Error ? error.message : "Delete failed");
+      resetAuthState(error instanceof Error ? error.message : "Delete failed");
     }
   };
 
@@ -539,7 +505,7 @@ function AppShell() {
           <AuthView
             mode={mode}
             form={form}
-            message={message}
+            message={message || localMessage || getSessionMessage()}
             loading={loading}
             isPaused={isPaused}
             onModeChange={setMode}
@@ -555,13 +521,14 @@ function AppShell() {
               activeFeed={activeFeed}
               postForm={postForm}
               eventForm={eventForm}
-              message={message}
+              message={message || localMessage || getSessionMessage()}
               onClose={() => setIsProfileMenuOpen(false)}
               onPostFormChange={setPostForm}
               onEventFormChange={setEventForm}
               onPostSubmit={handlePostSubmit}
               onEventSubmit={handleEventSubmit}
               onLogout={handleLogout}
+              onLogoutEverywhere={handleLogoutEverywhere}
               onDeleteProfile={handleDeleteProfile}
             />
             {activeFeed === "projects" ? (
