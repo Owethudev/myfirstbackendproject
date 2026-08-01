@@ -19,7 +19,6 @@ const handleControllerError = (res, error, fallbackMessage = "Internal server er
   return res.status(500).json({
     success: false,
     message: fallbackMessage,
-    error: error?.message,
   });
 };
 

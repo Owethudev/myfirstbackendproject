@@ -16,6 +16,7 @@ type ProfileDrawerProps = {
   onPostSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onEventSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onLogout: () => void;
+  onLogoutEverywhere: () => void;
   onDeleteProfile: () => void;
 };
 
@@ -32,6 +33,7 @@ export function ProfileDrawer({
   onPostSubmit,
   onEventSubmit,
   onLogout,
+  onLogoutEverywhere,
   onDeleteProfile,
 }: ProfileDrawerProps) {
   // This drawer holds profile information and the create-card that matches the current feed.
@@ -205,6 +207,14 @@ export function ProfileDrawer({
             >
               <LogOut size={16} />
               Log out
+            </button>
+            <button
+              type="button"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#FF6B35]/20 bg-[#FFF8F0] px-4 py-3 font-semibold text-[#FF6B35]"
+              onClick={onLogoutEverywhere}
+            >
+              <LogOut size={16} />
+              Log out everywhere
             </button>
             <button
               type="button"
