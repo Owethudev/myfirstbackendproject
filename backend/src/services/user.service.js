@@ -1,10 +1,19 @@
 import { v4 as uuidv4 } from "uuid";
-import { User } from "../models/user.model.js";
-import { Post } from "../models/post.model.js";
 import { sendVerificationEmail } from "../config/email.js";
 import { createError, createResult } from "../utils/controllerResponse.js";
 import { signAccessToken } from "../utils/auth.js";
 import { createSession, revokeAllUserSessions, revokeSession } from "../services/session.service.js";
+import {
+  countPosts,
+  countUsers,
+  createUser,
+  deleteUserByEmail,
+  findUserByEmail,
+  findUserById,
+  findUserByVerificationToken,
+  findUsers,
+  saveUser,
+} from "../repositories/user.repository.js";
 
 const normalizeEmail = (email) => (typeof email === "string" ? email.trim().toLowerCase() : "");
 
@@ -22,13 +31,13 @@ const registerUser = async ({ username, email, password }) => {
   if (inputValidation) return inputValidation;
 
   const normalizedEmail = normalizeEmail(email);
-  const existing = await User.findOne({ email: normalizedEmail });
+  const existing = await findUserByEmail(normalizedEmail);
   if (existing) {
     return createError(400, "User already exists");
   }
 
   const verificationToken = uuidv4();
-  const user = await User.create({
+  const user = await createUser({
     username,
     email: normalizedEmail,
     password,
@@ -46,7 +55,7 @@ const registerUser = async ({ username, email, password }) => {
       verificationUrl,
     });
   } catch (emailError) {
-    await User.findByIdAndDelete(user._id);
+    await deleteUserByEmail(user.email);
     return createError(500, "Account could not be created because the verification email could not be sent.", {
       error: emailError.message,
     });
@@ -68,14 +77,14 @@ const verifyUser = async (token) => {
     return createError(400, "Verification token is required");
   }
 
-  const user = await User.findOne({ verificationToken: token });
+  const user = await findUserByVerificationToken(token);
   if (!user) {
     return createError(400, "Invalid or expired verification token");
   }
 
   user.verified = true;
   user.verificationToken = undefined;
-  await user.save();
+  await saveUser(user);
 
   return createResult(200, {
     redirectUrl: `${process.env.FRONTEND_URL || process.env.VITE_API_BASE_URL || process.env.BACKEND_URL || "https://snpl-port.onrender.com"}/?verified=1`,
@@ -88,7 +97,7 @@ const loginUser = async ({ email, password }) => {
     return createError(400, "Please provide email and password");
   }
 
-  const user = await User.findOne({ email: normalizedEmail });
+  const user = await findUserByEmail(normalizedEmail);
   if (!user) {
     return createError(400, "User does not exist");
   }
@@ -127,7 +136,7 @@ const logoutUser = async (email, sessionId, logoutAll = false) => {
     return createError(400, "Email is required");
   }
 
-  const user = await User.findOne({ email: normalizeEmail(email) });
+  const user = await findUserByEmail(normalizeEmail(email));
   if (!user) {
     return createError(400, "User does not exist");
   }
@@ -146,7 +155,7 @@ const updateUser = async ({ id, username, email, password }) => {
     return createError(400, "User id is required");
   }
 
-  const user = await User.findById(id);
+  const user = await findUserById(id);
   if (!user) {
     return createError(404, "User not found");
   }
@@ -159,7 +168,7 @@ const updateUser = async ({ id, username, email, password }) => {
     return createError(400, "Please provide data to update");
   }
 
-  await user.save();
+  await saveUser(user);
 
   return createResult(200, {
     message: "Profile updated successfully",
@@ -176,7 +185,7 @@ const deleteUser = async (email) => {
     return createError(400, "Email is required");
   }
 
-  const user = await User.findOneAndDelete({ email: normalizeEmail(email) });
+  const user = await deleteUserByEmail(normalizeEmail(email));
   if (!user) {
     return createError(400, "User does not exist");
   }
@@ -199,12 +208,8 @@ const listUsers = async ({ search = "", page = "1", limit = "20" }) => {
     : {};
 
   const [totalItems, users] = await Promise.all([
-    User.countDocuments(query),
-    User.find(query)
-      .select("-password -verificationToken -resetPasswordToken -resetPasswordExpires")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parsedLimit),
+    countUsers(query),
+    findUsers({ query, skip, limit: parsedLimit, sort: { createdAt: -1 } }).then((result) => result.items),
   ]);
 
   const totalPages = Math.max(Math.ceil(totalItems / parsedLimit), 1);
@@ -219,13 +224,13 @@ const listUsers = async ({ search = "", page = "1", limit = "20" }) => {
 };
 
 const updateUserStatus = async (id, suspended) => {
-  const user = await User.findById(id);
+  const user = await findUserById(id);
   if (!user) {
     return createError(404, "User not found");
   }
 
   user.suspended = Boolean(suspended);
-  await user.save();
+  await saveUser(user);
 
   return createResult(200, {
     message: user.suspended ? "User suspended successfully" : "User reactivated successfully",
@@ -245,13 +250,13 @@ const updateUserRole = async (id, role) => {
     return createError(400, "A valid role is required");
   }
 
-  const user = await User.findById(id);
+  const user = await findUserById(id);
   if (!user) {
     return createError(404, "User not found");
   }
 
   user.role = role;
-  await user.save();
+  await saveUser(user);
 
   return createResult(200, {
     message: "User role updated successfully",
@@ -268,10 +273,10 @@ const updateUserRole = async (id, role) => {
 
 const getAdminStats = async () => {
   const [totalUsers, verifiedUsers, unverifiedUsers, totalPosts] = await Promise.all([
-    User.countDocuments(),
-    User.countDocuments({ verified: true }),
-    User.countDocuments({ verified: false }),
-    Post.countDocuments(),
+    countUsers(),
+    countUsers({ verified: true }),
+    countUsers({ verified: false }),
+    countPosts(),
   ]);
 
   return createResult(200, {

@@ -3,6 +3,7 @@ import {
   type TouchEvent,
   Suspense,
   lazy,
+  useCallback,
   useEffect,
   useState,
 } from "react";
@@ -16,7 +17,7 @@ import { ForgotPasswordPage } from "./components/ForgotPasswordPage.tsx";
 import { Header } from "./components/Header.tsx";
 import { ProfileDrawer } from "./components/ProfileDrawer.tsx";
 import { ResetPasswordPage } from "./components/ResetPasswordPage.tsx";
-import { buildApiUrl } from "./api.ts";
+import { buildApiUrl, getApiErrorMessage, parseJsonResponse } from "./api.ts";
 import { authService } from "./services/authService.ts";
 import {
   clearAuthState,
@@ -132,14 +133,13 @@ function AppShell() {
       .some((value) => String(value).toLowerCase().includes(normalizedSearch));
   });
 
-  const loadPosts = async (page = 1, append = false) => {
+  const loadPosts = useCallback(async (page = 1, append = false) => {
     try {
       const response = await fetch(
         buildApiUrl(`/api/v1/posts/getPosts?page=${page}&limit=6`),
       );
-      const data = await response
-        .json()
-        .catch(() => ({}) as PaginatedResponse<PostItem>);
+      const data =
+        await parseJsonResponse<PaginatedResponse<PostItem>>(response);
 
       if (response.ok && Array.isArray(data.items)) {
         setPosts((current) =>
@@ -158,16 +158,15 @@ function AppShell() {
       setPostPage(1);
       setHasMorePosts(false);
     }
-  };
+  }, []);
 
-  const loadEvents = async (page = 1, append = false) => {
+  const loadEvents = useCallback(async (page = 1, append = false) => {
     try {
       const response = await fetch(
         buildApiUrl(`/api/v1/events/getEvents?page=${page}&limit=12`),
       );
-      const data = await response
-        .json()
-        .catch(() => ({}) as PaginatedResponse<EventItem>);
+      const data =
+        await parseJsonResponse<PaginatedResponse<EventItem>>(response);
 
       if (response.ok && Array.isArray(data.items)) {
         setEvents((current) =>
@@ -186,15 +185,19 @@ function AppShell() {
       setEventPage(1);
       setHasMoreEvents(false);
     }
-  };
+  }, []);
 
-  const refreshCommunityData = async () => {
+  const refreshCommunityData = useCallback(async () => {
     await Promise.all([loadPosts(1), loadEvents(1)]);
-  };
+  }, [loadEvents, loadPosts]);
 
   useEffect(() => {
-    void refreshCommunityData();
-  }, [user?.id]);
+    const runRefresh = async () => {
+      await refreshCommunityData();
+    };
+
+    void runRefresh();
+  }, [refreshCommunityData, user?.id]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -221,10 +224,15 @@ function AppShell() {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      const data = await parseJsonResponse<{
+        message?: string;
+        user?: unknown;
+        token?: string;
+        sessionId?: string;
+      }>(response);
 
       if (!response.ok) {
-        throw new Error(data.message || "Request failed");
+        throw new Error(getApiErrorMessage(data, "Request failed"));
       }
 
       if (mode === "signup") {
@@ -275,10 +283,10 @@ function AppShell() {
         }),
       });
 
-      const data = await response.json();
+      const data = await parseJsonResponse<{ message?: string }>(response);
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to create post");
+        throw new Error(getApiErrorMessage(data, "Failed to create post"));
       }
 
       setPostForm(EMPTY_POST_FORM);
@@ -310,9 +318,9 @@ function AppShell() {
         }),
       });
 
-      const data = await response.json();
+      const data = await parseJsonResponse<{ message?: string }>(response);
       if (!response.ok) {
-        throw new Error(data.message || "Failed to create event");
+        throw new Error(getApiErrorMessage(data, "Failed to create event"));
       }
 
       setEventForm(EMPTY_EVENT_FORM);
@@ -405,8 +413,9 @@ function AppShell() {
           body: JSON.stringify({ username: user.username }),
         },
       );
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Delete failed");
+      const data = await parseJsonResponse<{ message?: string }>(response);
+      if (!response.ok)
+        throw new Error(getApiErrorMessage(data, "Delete failed"));
       setEvents((current) => current.filter((event) => event._id !== eventId));
       setMessage(data.message || "Event deleted");
     } catch (error) {
@@ -432,7 +441,7 @@ function AppShell() {
         body: JSON.stringify({ email: user.email }),
       });
 
-      const data = await response.json().catch(() => ({}));
+      const data = await parseJsonResponse<{ message?: string }>(response);
       if (!response.ok) {
         console.warn(
           "Profile deletion request failed, forcing local sign-out",

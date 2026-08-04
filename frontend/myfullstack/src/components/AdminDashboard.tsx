@@ -90,9 +90,12 @@ export function AdminDashboard() {
 
     const token = localStorage.getItem("snpl_token") || "";
     if (!token) {
-      setError("Please log in again to access the dashboard.");
-      setLoading(false);
-      return;
+      const timer = window.setTimeout(() => {
+        setError("Please log in again to access the dashboard.");
+        setLoading(false);
+      }, 0);
+
+      return () => window.clearTimeout(timer);
     }
 
     const loadStats = async () => {
@@ -257,9 +260,15 @@ export function AdminDashboard() {
   };
 
   useEffect(() => {
-    if (selectedTab === "audit") {
-      void loadAuditLogs();
+    if (selectedTab !== "audit") {
+      return;
     }
+
+    const timer = window.setTimeout(() => {
+      void loadAuditLogs();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [selectedTab]);
 
   return (
