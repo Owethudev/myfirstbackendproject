@@ -1,7 +1,7 @@
 import crypto from "crypto";
-import { User } from "../models/user.model.js";
 import { sendPasswordResetEmail } from "../config/email.js";
 import { createError, createResult } from "../utils/controllerResponse.js";
+import { findUserByEmail, findUserByResetToken, saveUser } from "../repositories/user.repository.js";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -16,7 +16,7 @@ const forgotPassword = async (email) => {
     return createError(400, "Please provide a valid email address.");
   }
 
-  const user = await User.findOne({ email: normalizedEmail });
+  const user = await findUserByEmail(normalizedEmail);
 
   if (user) {
     const rawToken = crypto.randomBytes(32).toString("hex");
@@ -24,7 +24,7 @@ const forgotPassword = async (email) => {
 
     user.resetPasswordToken = hashedToken;
     user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
-    await user.save();
+    await saveUser(user);
 
     const frontendBaseUrl = process.env.FRONTEND_URL || process.env.VITE_API_BASE_URL || "https://snplport.netlify.app";
     const resetUrl = `${frontendBaseUrl}/reset-password/${rawToken}`;
@@ -53,10 +53,7 @@ const resetPassword = async ({ token, password }) => {
   }
 
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-  const user = await User.findOne({
-    resetPasswordToken: hashedToken,
-    resetPasswordExpires: { $gt: Date.now() },
-  });
+  const user = await findUserByResetToken(hashedToken);
 
   if (!user) {
     return createError(400, "Invalid or expired reset token.");
@@ -65,7 +62,7 @@ const resetPassword = async ({ token, password }) => {
   user.password = password;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpires = undefined;
-  await user.save();
+  await saveUser(user);
 
   return createResult(200, {
     success: true,

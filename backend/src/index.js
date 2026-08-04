@@ -17,6 +17,45 @@ dotenv.config({
     path: path.resolve(__dirname, "../../.env"),
 });
 
+let server;
+
+const shutdown = (signal) => {
+    if (!server) {
+        return;
+    }
+
+    server.close(() => {
+        console.log(`Server stopped gracefully after ${signal}.`);
+        process.exit(0);
+    });
+};
+
+const listenWithPortFallback = (preferredPort) => {
+    const candidatePorts = [preferredPort, preferredPort + 1, preferredPort + 2, preferredPort + 3, preferredPort + 4];
+
+    return new Promise((resolve, reject) => {
+        const tryPort = (index) => {
+            const port = candidatePorts[index];
+            const currentServer = app.listen(port, () => {
+                console.log(`Server is running on port ${port}`);
+                resolve(currentServer);
+            });
+
+            currentServer.on("error", (error) => {
+                if (error.code === "EADDRINUSE" && index < candidatePorts.length - 1) {
+                    console.warn(`Port ${port} is busy. Trying ${candidatePorts[index + 1]} instead.`);
+                    currentServer.close(() => tryPort(index + 1));
+                    return;
+                }
+
+                reject(error);
+            });
+        };
+
+        tryPort(0);
+    });
+};
+
 // Start the server after successfully connecting to the database.
 const startServer = async () => {
     const isProduction = process.env.NODE_ENV === "production";
@@ -29,16 +68,14 @@ const startServer = async () => {
     try {
         await connectDB(); // This connects the server to the database.
 
-        app.on("error", (error) => {
-            console.log("Error starting server:", error);
-            throw error;
-        });
+        const preferredPort = Number(process.env.PORT || 8000);
+        server = await listenWithPortFallback(preferredPort);
 
-        app.listen(process.env.PORT || 8000, () => {
-            console.log(`Server is running on port ${process.env.PORT || 8000}`);
-        });
+        process.on("SIGINT", () => shutdown("SIGINT"));
+        process.on("SIGTERM", () => shutdown("SIGTERM"));
     } catch (error) {
-        console.log("mngoDB connection failed", error);
+        console.error("Error starting server:", error);
+        process.exit(1);
     }
 };
 

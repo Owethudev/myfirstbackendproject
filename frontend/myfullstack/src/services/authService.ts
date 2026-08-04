@@ -1,4 +1,4 @@
-import { buildApiUrl } from "../api.ts";
+import { buildApiUrl, getApiErrorMessage, parseJsonResponse } from "../api.ts";
 import { clearAuthState, getStoredSessionId, getStoredToken, getStoredUser, persistAuthState } from "./sessionManager.ts";
 
 type AuthResponse = {
@@ -13,17 +13,22 @@ type AuthResponse = {
   };
 };
 
+const buildJsonHeaders = (token?: string | null) => ({
+  "Content-Type": "application/json",
+  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+});
+
 export const authService = {
   async login(payload: { email: string; password: string }) {
     const response = await fetch(buildApiUrl("/api/v1/users/login"), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: buildJsonHeaders(),
       body: JSON.stringify(payload),
     });
 
-    const data = (await response.json().catch(() => ({}))) as AuthResponse;
+    const data = await parseJsonResponse<AuthResponse>(response);
     if (!response.ok) {
-      throw new Error(data.message || "Login failed");
+      throw new Error(getApiErrorMessage(data, "Login failed"));
     }
 
     if (data.user) {
@@ -39,10 +44,7 @@ export const authService = {
     try {
       await fetch(buildApiUrl("/api/v1/users/logout"), {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: buildJsonHeaders(token),
         body: JSON.stringify({
           email: storedUser?.email,
           sessionId: getStoredSessionId(),
@@ -61,19 +63,19 @@ export const authService = {
     const response = await fetch(buildApiUrl(path), {
       ...options,
       headers: {
+        ...buildJsonHeaders(token),
         ...(options.headers || {}),
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
 
-    const data = (await response.json().catch(() => ({}))) as { success?: boolean; message?: string };
+    const data = await parseJsonResponse<{ success?: boolean; message?: string }>(response);
     if (response.status === 401 && data.message) {
       clearAuthState(data.message);
       throw new Error(data.message);
     }
 
     if (!response.ok) {
-      throw new Error(data.message || "Request failed");
+      throw new Error(getApiErrorMessage(data, "Request failed"));
     }
 
     return data;
