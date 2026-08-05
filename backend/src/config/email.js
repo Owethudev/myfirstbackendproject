@@ -80,11 +80,55 @@ const sendVerificationEmail = async ({ to, username, verificationUrl }) => {
   return sendEmailRequest({
     to,
     subject: "Verify your SNPLPORT account",
-    html: `
-      <h1>Welcome to SNPLPORT, ${username}!</h1>
-      <p>Please verify your account by clicking the link below:</p>
-      <p><a href="${verificationUrl}">Verify your email</a></p>
-    `,
+    html: `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verify your SNPLPORT account</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#f5f7fb;font-family:Arial,Helvetica,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 24px 60px rgba(15,23,42,0.08);">
+            <tr>
+              <td style="background:#4f46e5;padding:28px 30px;text-align:center;color:#ffffff;">
+                <h1 style="margin:0;font-size:28px;letter-spacing:-0.04em;">SNPLPORT</h1>
+                <p style="margin:8px 0 0;font-size:16px;color:rgba(255,255,255,0.9);">Email verification</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px 30px 16px;color:#0f172a;">
+                <p style="margin:0 0 18px;font-size:18px;font-weight:600;">Hi ${username},</p>
+                <p style="margin:0 0 20px;font-size:15px;line-height:1.75;color:#475569;">
+                  Thanks for creating your SNPLPORT account. To get started, please confirm your email address by clicking the button below.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 30px 24px;">
+                <a href="${verificationUrl}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 24px;border-radius:12px;font-size:16px;font-weight:600;">Verify my email</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 30px 18px;color:#64748b;font-size:14px;line-height:1.75;">
+                <p style="margin:0 0 10px;">If the button does not work, copy and paste the link below into your browser:</p>
+                <p style="margin:0;"><a href="${verificationUrl}" style="color:#4f46e5;word-break:break-all;text-decoration:none;">${verificationUrl}</a></p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 30px 30px;color:#475569;font-size:14px;line-height:1.75;border-top:1px solid #e2e8f0;">
+                <p style="margin:0 0 8px;">If you didn’t create this account, you can safely ignore this email.</p>
+                <p style="margin:0;">Need help? Reply to this email and we’ll assist you.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`,
     from,
   });
 };
@@ -96,13 +140,56 @@ const sendPasswordResetEmail = async ({ to, username, resetUrl }) => {
   return sendEmailRequest({
     to,
     subject: "Reset your SNPLPORT password",
-    html: `
-      <h1>Hello ${username},</h1>
-      <p>You requested a password reset for your SNPLPORT account.</p>
-      <p>Use the link below to create a new password:</p>
-      <p><a href="${resetUrl}">Reset your password</a></p>
-      <p>This link expires in 15 minutes.</p>
-    `,
+    html: `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reset your SNPLPORT password</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#f5f7fb;font-family:Arial,Helvetica,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 24px 60px rgba(15,23,42,0.08);">
+            <tr>
+              <td style="background:#4f46e5;padding:28px 30px;text-align:center;color:#ffffff;">
+                <h1 style="margin:0;font-size:28px;letter-spacing:-0.04em;">SNPLPORT</h1>
+                <p style="margin:8px 0 0;font-size:16px;color:rgba(255,255,255,0.9);">Password reset request</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px 30px 16px;color:#0f172a;">
+                <p style="margin:0 0 18px;font-size:18px;font-weight:600;">Hello ${username},</p>
+                <p style="margin:0 0 20px;font-size:15px;line-height:1.75;color:#475569;">
+                  We received a request to reset your SNPLPORT password. Click the button below to choose a new password.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 30px 24px;">
+                <a href="${resetUrl}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 24px;border-radius:12px;font-size:16px;font-weight:600;">Reset my password</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 30px 18px;color:#64748b;font-size:14px;line-height:1.75;">
+                <p style="margin:0 0 10px;">This link expires in 15 minutes.</p>
+                <p style="margin:0 0 10px;">If the button does not work, paste this link into your browser:</p>
+                <p style="margin:0;"><a href="${resetUrl}" style="color:#4f46e5;word-break:break-all;text-decoration:none;">${resetUrl}</a></p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 30px 30px;color:#475569;font-size:14px;line-height:1.75;border-top:1px solid #e2e8f0;">
+                <p style="margin:0 0 8px;">If you did not request a password reset, you can ignore this email and your account will remain secure.</p>
+                <p style="margin:0;">Need help? Reply to this message and we’ll help you out.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`,
     from,
   });
 };
