@@ -19,6 +19,7 @@ import { ProfileDrawer } from "./components/ProfileDrawer.tsx";
 import { ResetPasswordPage } from "./components/ResetPasswordPage.tsx";
 import { buildApiUrl, getApiErrorMessage, parseJsonResponse } from "./api.ts";
 import { authService } from "./services/authService.ts";
+import { apiClient } from "./services/apiClient.ts";
 import {
   clearAuthState,
   getSessionMessage,
@@ -272,22 +273,12 @@ function AppShell() {
     if (!user) return;
 
     try {
-      const response = await fetch(buildApiUrl("/api/v1/posts/create"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const data = await apiClient.post("/api/v1/posts/create", {
           name: postForm.name,
           description: postForm.description,
           portfolio: postForm.portfolio,
           author: user.username,
-        }),
       });
-
-      const data = await parseJsonResponse<{ message?: string }>(response);
-
-      if (!response.ok) {
-        throw new Error(getApiErrorMessage(data, "Failed to create post"));
-      }
 
       setPostForm(EMPTY_POST_FORM);
       await loadPosts();
@@ -306,22 +297,13 @@ function AppShell() {
     if (!user) return;
 
     try {
-      const response = await fetch(buildApiUrl("/api/v1/events/create"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const data = await apiClient.post("/api/v1/events/create", {
           name: eventForm.name,
           location: eventForm.location,
           theme: eventForm.theme,
           time: eventForm.time,
           author: user.username,
-        }),
       });
-
-      const data = await parseJsonResponse<{ message?: string }>(response);
-      if (!response.ok) {
-        throw new Error(getApiErrorMessage(data, "Failed to create event"));
-      }
 
       setEventForm(EMPTY_EVENT_FORM);
       await loadEvents();
@@ -379,16 +361,13 @@ function AppShell() {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(
-        buildApiUrl(`/api/v1/posts/delete/${postId}`),
+      const data = await apiClient.del(
+        `/api/v1/posts/delete/${postId}`,
         {
-          method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username: user.username }),
         },
       );
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Delete failed");
       // This removes the deleted post right away from the screen.
       setPosts((current) => current.filter((post) => post._id !== postId));
       setMessage(data.message || "Post deleted");
@@ -405,17 +384,13 @@ function AppShell() {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(
-        buildApiUrl(`/api/v1/events/delete/${eventId}`),
+      const data = await apiClient.del(
+        `/api/v1/events/delete/${eventId}`,
         {
-          method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username: user.username }),
         },
       );
-      const data = await parseJsonResponse<{ message?: string }>(response);
-      if (!response.ok)
-        throw new Error(getApiErrorMessage(data, "Delete failed"));
       setEvents((current) => current.filter((event) => event._id !== eventId));
       setMessage(data.message || "Event deleted");
     } catch (error) {

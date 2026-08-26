@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
 import test from "node:test";
 import authMiddleware from "./auth.middleware.js";
@@ -23,7 +24,7 @@ const createMockResponse = () => {
 test("expired JWTs return a consistent 401 session-expired payload", async () => {
   const req = {
     headers: {
-      authorization: `Bearer ${jwt.sign({ id: "user-1" }, "test-secret", { expiresIn: -1 })}`,
+      authorization: `Bearer ${jwt.sign({ id: "user-1" }, process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex"), { expiresIn: -1 })}`,
     },
   };
   const res = createMockResponse();

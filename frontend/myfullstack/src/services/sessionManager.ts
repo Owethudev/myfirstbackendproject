@@ -10,7 +10,7 @@ const safeStorage = {
     try {
       return window.localStorage.getItem(key);
     } catch (error) {
-      console.error(`failed reading storage key ${key}`, error);
+      console.error("failed reading storage key", key, error);
       return null;
     }
   },
@@ -18,14 +18,14 @@ const safeStorage = {
     try {
       window.localStorage.setItem(key, value);
     } catch (error) {
-      console.error(`failed writing storage key ${key}`, error);
+      console.error("failed writing storage key", key, error);
     }
   },
   remove(key: string): void {
     try {
       window.localStorage.removeItem(key);
     } catch (error) {
-      console.error(`failed removing storage key ${key}`, error);
+      console.error("failed removing storage key", key, error);
     }
   },
 };
