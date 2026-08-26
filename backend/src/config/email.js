@@ -1,7 +1,6 @@
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import fs from "fs";
 import https from "https";
 
 // Get the current file path so we can resolve the backend .env file reliably.
@@ -12,27 +11,12 @@ const __dirname = path.dirname(__filename);
 const envPath = path.resolve(__dirname, "../../.env");
 dotenv.config({ path: envPath, override: true });
 
-// Read the mail API key from the environment first, then fall back to scanning the .env file text.
-const getApiKey = () => {
-  const fromEnv = process.env.API_MAIL_KEY || process.env.MAIL_API_KEY;
-  if (fromEnv) return fromEnv;
-
-  try {
-    const envFile = fs.readFileSync(envPath, "utf8");
-    const match = envFile.match(/API_MAIL_KEY=(.+)/);
-    return match ? match[1].trim() : null;
-  } catch {
-    return null;
-  }
-};
-
-// Backup token if no real API key is available.
-const fallbackApiKey = "a99cb26a-3013-4168-bac6-8039d0c4405e";
+const getApiKey = () => process.env.API_MAIL_KEY || process.env.MAIL_API_KEY;
 
 // Reuse the same outbound email provider so verification and password-reset
 // emails follow the same secure delivery path.
 const sendEmailRequest = async ({ to, subject, html, from }) => {
-  const apiKey = getApiKey() || fallbackApiKey;
+  const apiKey = getApiKey();
 
   if (!apiKey) {
     throw new Error("API_MAIL_KEY is not configured.");

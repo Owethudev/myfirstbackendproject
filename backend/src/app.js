@@ -12,9 +12,20 @@ app.disable("x-powered-by");
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false, limit: "1mb" }));
 
-// This middleware sets the necessary headers to allow cross-origin requests from any domain, and handles preflight OPTIONS requests.
+const getAllowedOrigins = () => new Set(
+    (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || "https://snplport.netlify.app")
+        .split(",")
+        .map((origin) => origin.trim())
+        .filter(Boolean),
+);
+
+// This middleware restricts cross-origin requests to configured frontend origins and handles preflight requests.
 app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
+    const requestOrigin = req.headers.origin;
+    if (requestOrigin && getAllowedOrigins().has(requestOrigin)) {
+        res.header("Access-Control-Allow-Origin", requestOrigin);
+        res.header("Vary", "Origin");
+    }
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
     res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
     res.header("Access-Control-Allow-Credentials", "true");
@@ -71,7 +82,7 @@ app.use((error, req, res, next) => {
         return res.status(error.statusCode).json(error.payload);
     }
 
-    console.error(`Unhandled error on ${req.method} ${req.path}:`, error);
+    console.error("Unhandled request error", { method: req.method, path: req.path, error });
 
     return res.status(500).json({
         success: false,
