@@ -83,7 +83,7 @@ export function Feed({
               className="overflow-hidden rounded-[1.75rem] border border-[#2D1E2F]/10 bg-[#FFF8F0] shadow-[0_16px_50px_rgba(45,30,47,0.10)]"
             >
               <div
-                className="flex min-h-36 items-end justify-between px-5 py-5 text-[#2D1E2F]"
+                className="relative flex min-h-36 items-end justify-between px-5 py-5 text-[#2D1E2F]"
                 style={getCoverStyle(post.name)}
               >
                 <div>
@@ -94,47 +94,59 @@ export function Feed({
                     {post.name}
                   </h3>
                 </div>
+                {isGridView && user && post.author === user.username ? (
+                  <button
+                    type="button"
+                    className="absolute right-4 top-4 rounded-full border border-[#2D1E2F]/15 bg-[#FFF8F0]/80 p-2.5 text-[#EF476F] transition hover:-translate-y-0.5"
+                    onClick={() => onDeletePost(post._id)}
+                    aria-label="Delete post"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                ) : null}
               </div>
 
-              <div className="space-y-4 p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-[#2D1E2F]">
-                      {post.name}
-                    </p>
-                    <p className="text-sm text-[#2D1E2F]/70">
-                      Creator • {post.author ?? "Unknown"}
-                    </p>
+              {!isGridView ? (
+                <div className="space-y-4 p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-[#2D1E2F]">
+                        {post.name}
+                      </p>
+                      <p className="text-sm text-[#2D1E2F]/70">
+                        Creator • {post.author ?? "Unknown"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="text-sm leading-6 text-[#2D1E2F]/80">
+                    {post.description}
+                  </p>
+
+                  <a
+                    href={post.portfolio}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center text-sm font-semibold text-[#3D5A40] underline-offset-4 hover:text-[#EF476F] hover:underline"
+                  >
+                    View project / portfolio
+                  </a>
+
+                  <div className="flex items-center justify-between gap-2 border-t border-[#2D1E2F]/10 pt-4">
+                    <div className="flex gap-2"></div>
+                    {user && post.author === user.username ? (
+                      <button
+                        type="button"
+                        className="ml-2 rounded-full border p-2.5 text-[#EF476F] transition hover:-translate-y-0.5"
+                        onClick={() => onDeletePost(post._id)}
+                        aria-label="Delete post"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    ) : null}
                   </div>
                 </div>
-
-                <p className="text-sm leading-6 text-[#2D1E2F]/80">
-                  {post.description}
-                </p>
-
-                <a
-                  href={post.portfolio}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center text-sm font-semibold text-[#3D5A40] underline-offset-4 hover:text-[#EF476F] hover:underline"
-                >
-                  View project / portfolio
-                </a>
-
-                <div className="flex items-center justify-between gap-2 border-t border-[#2D1E2F]/10 pt-4">
-                  <div className="flex gap-2"></div>
-                  {user && post.author === user.username ? (
-                    <button
-                      type="button"
-                      className="ml-2 rounded-full border p-2.5 text-[#EF476F] transition hover:-translate-y-0.5"
-                      onClick={() => onDeletePost(post._id)}
-                      aria-label="Delete post"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  ) : null}
-                </div>
-              </div>
+              ) : null}
             </motion.article>
           ))}
         </div>

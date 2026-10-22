@@ -102,4 +102,31 @@ describe("guest feed access", () => {
     expect(screen.getAllByText("Guest-visible event").length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /delete event/i })).toBeNull();
   });
+
+  it("shows only the creator and title for projects in grid view", () => {
+    render(
+      <Feed
+        posts={[
+          {
+            _id: "project-1",
+            name: "Grid project",
+            description: "Project details are hidden in the grid",
+            portfolio: "https://example.com",
+            author: "creator",
+          },
+        ]}
+        user={null}
+        viewMode="grid"
+        onViewModeChange={() => {}}
+        onDeletePost={() => {}}
+      />,
+    );
+
+    expect(screen.getByText("CREATOR")).toBeInTheDocument();
+    expect(screen.getByText("Grid project")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Project details are hidden in the grid"),
+    ).toBeNull();
+    expect(screen.queryByRole("link", { name: /view project/i })).toBeNull();
+  });
 });
