@@ -20,6 +20,7 @@ type AuthViewProps = {
   onFormChange: Dispatch<SetStateAction<AuthForm>>;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onPauseChange: (paused: boolean) => void;
+  onContinueAsGuest: () => void;
 };
 
 export function AuthView({
@@ -32,6 +33,7 @@ export function AuthView({
   onFormChange,
   onSubmit,
   onPauseChange,
+  onContinueAsGuest,
 }: AuthViewProps) {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -194,6 +196,19 @@ export function AuthView({
             {message}
           </p>
         ) : null}
+
+        <div className="mt-5 border-t border-[#2D1E2F]/10 pt-4 text-center">
+          <p className="text-sm text-[#2D1E2F]/70">
+            Just looking around?
+          </p>
+          <button
+            type="button"
+            onClick={onContinueAsGuest}
+            className="mt-2 rounded-full border border-[#2D1E2F]/15 px-5 py-2 text-sm font-semibold text-[#2D1E2F] transition hover:bg-[#FFF8F0]"
+          >
+            Continue as guest
+          </button>
+        </div>
       </motion.section>
     </div>
   );

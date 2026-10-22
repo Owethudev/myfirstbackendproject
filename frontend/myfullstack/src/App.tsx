@@ -72,6 +72,7 @@ function AppShell() {
   const [mode, setMode] = useState<AuthMode>("login");
   const [form, setForm] = useState<AuthForm>(EMPTY_AUTH_FORM);
   const { user, token, message, signOut, setMessage } = useAuth();
+  const [isGuest, setIsGuest] = useState(false);
   const [localMessage, setLocalMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [posts, setPosts] = useState<PostItem[]>([]);
@@ -106,6 +107,7 @@ function AppShell() {
   };
 
   const resetAuthState = (nextMessage = "", shouldResetForm = true) => {
+    setIsGuest(false);
     setMode("login");
     if (shouldResetForm) {
       setForm(EMPTY_AUTH_FORM);
@@ -245,6 +247,7 @@ function AppShell() {
       }
 
       if (data.user) {
+        setIsGuest(false);
         setLocalMessage(data.message || "");
         setMessage(data.message || "");
         localStorage.setItem("snpl_user", JSON.stringify(data.user));
@@ -465,6 +468,7 @@ function AppShell() {
     <div className="min-h-screen bg-transparent text-[#2D1E2F]">
       <Header
         user={user}
+        isGuest={isGuest}
         searchScope={searchScope}
         searchTerm={searchTerm}
         isSearchOpen={isSearchOpen}
@@ -477,6 +481,11 @@ function AppShell() {
         onSearchTermChange={setSearchTerm}
         onToggleSearch={() => setIsSearchOpen((value) => !value)}
         onOpenProfile={() => setIsProfileMenuOpen(true)}
+        onLeaveGuest={() => {
+          setIsGuest(false);
+          setIsSearchOpen(false);
+          setLocalMessage("");
+        }}
       />
 
       <main
@@ -485,7 +494,7 @@ function AppShell() {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {!user ? (
+        {!user && !isGuest ? (
           <AuthView
             mode={mode}
             form={form}
@@ -496,25 +505,32 @@ function AppShell() {
             onFormChange={setForm}
             onSubmit={handleSubmit}
             onPauseChange={setIsPaused}
+            onContinueAsGuest={() => {
+              setIsGuest(true);
+              setLocalMessage("");
+              setMessage("");
+            }}
           />
         ) : (
           <>
-            <ProfileDrawer
-              user={user}
-              isOpen={isProfileMenuOpen}
-              activeFeed={activeFeed}
-              postForm={postForm}
-              eventForm={eventForm}
-              message={message || localMessage || getSessionMessage()}
-              onClose={() => setIsProfileMenuOpen(false)}
-              onPostFormChange={setPostForm}
-              onEventFormChange={setEventForm}
-              onPostSubmit={handlePostSubmit}
-              onEventSubmit={handleEventSubmit}
-              onLogout={handleLogout}
-              onLogoutEverywhere={handleLogoutEverywhere}
-              onDeleteProfile={handleDeleteProfile}
-            />
+            {user ? (
+              <ProfileDrawer
+                user={user}
+                isOpen={isProfileMenuOpen}
+                activeFeed={activeFeed}
+                postForm={postForm}
+                eventForm={eventForm}
+                message={message || localMessage || getSessionMessage()}
+                onClose={() => setIsProfileMenuOpen(false)}
+                onPostFormChange={setPostForm}
+                onEventFormChange={setEventForm}
+                onPostSubmit={handlePostSubmit}
+                onEventSubmit={handleEventSubmit}
+                onLogout={handleLogout}
+                onLogoutEverywhere={handleLogoutEverywhere}
+                onDeleteProfile={handleDeleteProfile}
+              />
+            ) : null}
             {activeFeed === "projects" ? (
               <>
                 <Feed
@@ -570,7 +586,7 @@ function AppShell() {
         )}
       </main>
 
-      {user ? (
+      {user || isGuest ? (
         <>
           <button
             type="button"

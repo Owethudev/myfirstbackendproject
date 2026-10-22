@@ -17,7 +17,7 @@
   "scripts": {
     "prestart": "npm install --prefix backend --no-audit --no-fund",
     "start": "node backend/src/index.js",
-    "dev": "nodemon backend/src/index.js",
+    "dev": "npm --prefix backend run dev",
     "test": "npm --prefix backend test"
   },
   "overrides": {
