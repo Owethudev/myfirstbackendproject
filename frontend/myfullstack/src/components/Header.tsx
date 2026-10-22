@@ -3,6 +3,7 @@ import type { UserProfile } from "../types.ts";
 
 type HeaderProps = {
   user: UserProfile | null;
+  isGuest: boolean;
   searchScope: "projects" | "events";
   searchTerm: string;
   isSearchOpen: boolean;
@@ -10,10 +11,12 @@ type HeaderProps = {
   onSearchTermChange: (value: string) => void;
   onToggleSearch: () => void;
   onOpenProfile: () => void;
+  onLeaveGuest: () => void;
 };
 
 export function Header({
   user,
+  isGuest,
   searchScope,
   searchTerm,
   isSearchOpen,
@@ -21,6 +24,7 @@ export function Header({
   onSearchTermChange,
   onToggleSearch,
   onOpenProfile,
+  onLeaveGuest,
 }: HeaderProps) {
   // This top bar shows the page name, optional search controls, and the profile menu button.
   return (
@@ -33,11 +37,13 @@ export function Header({
           <h1 className="font-['Bebas_Neue'] text-2xl tracking-wide text-[#2D1E2F] sm:text-3xl">
             {user
               ? `WELCOME, ${user.username.toUpperCase()}`
-              : "CLASSROOM PORTFOLIO"}
+              : isGuest
+                ? "GUEST BROWSING"
+                : "CLASSROOM PORTFOLIO"}
           </h1>
         </div>
         <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-          {user ? (
+          {user || isGuest ? (
             <>
               <button
                 type="button"
@@ -84,14 +90,24 @@ export function Header({
                   />
                 </div>
               ) : null}
-              <button
-                type="button"
-                className="rounded-full border border-[#2D1E2F]/10 bg-[#FFF8F0]/90 p-2 text-[#2D1E2F] transition hover:bg-[#FFF8F0] focus:outline-none focus:ring-2 focus:ring-[#EF476F]/40"
-                onClick={onOpenProfile}
-                aria-label="Open profile menu"
-              >
-                <Menu size={20} />
-              </button>
+              {user ? (
+                <button
+                  type="button"
+                  className="rounded-full border border-[#2D1E2F]/10 bg-[#FFF8F0]/90 p-2 text-[#2D1E2F] transition hover:bg-[#FFF8F0] focus:outline-none focus:ring-2 focus:ring-[#EF476F]/40"
+                  onClick={onOpenProfile}
+                  aria-label="Open profile menu"
+                >
+                  <Menu size={20} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onLeaveGuest}
+                  className="rounded-full bg-[#EF476F] px-4 py-2 text-xs font-semibold text-[#FFF8F0]"
+                >
+                  Sign in
+                </button>
+              )}
             </>
           ) : null}
         </div>

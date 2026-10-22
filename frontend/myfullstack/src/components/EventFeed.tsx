@@ -5,7 +5,7 @@ import type { EventItem, UserProfile } from "../types.ts";
 
 type EventFeedProps = {
   events: EventItem[];
-  user: UserProfile;
+  user: UserProfile | null;
   viewMode: "current" | "grid";
   onViewModeChange: (view: "current" | "grid") => void;
   onDeleteEvent: (eventId: string) => void;
@@ -107,7 +107,7 @@ export function EventFeed({
                 </div>
 
                 <div className="flex items-center justify-end gap-2 border-t border-[#2D1E2F]/10 pt-4">
-                  {event.author === user.username ? (
+                  {user && event.author === user.username ? (
                     <button
                       type="button"
                       className="ml-2 rounded-full border p-2.5 text-[#EF476F] transition hover:-translate-y-0.5"

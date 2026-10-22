@@ -5,7 +5,7 @@ import type { PostItem, UserProfile } from "../types.ts";
 
 type FeedProps = {
   posts: PostItem[];
-  user: UserProfile;
+  user: UserProfile | null;
   viewMode: "current" | "grid";
   onViewModeChange: (view: "current" | "grid") => void;
   onDeletePost: (postId: string) => void;
@@ -123,7 +123,7 @@ export function Feed({
 
                 <div className="flex items-center justify-between gap-2 border-t border-[#2D1E2F]/10 pt-4">
                   <div className="flex gap-2"></div>
-                  {post.author === user.username ? (
+                  {user && post.author === user.username ? (
                     <button
                       type="button"
                       className="ml-2 rounded-full border p-2.5 text-[#EF476F] transition hover:-translate-y-0.5"
