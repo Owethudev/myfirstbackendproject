@@ -42,14 +42,14 @@ export function ForgotPasswordPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md items-center justify-center px-4 py-8">
-      <div className="w-full rounded-[2rem] border border-[#2D1E2F]/10 bg-[#FFF8F0]/95 p-6 shadow-[0_20px_60px_rgba(45,30,47,0.16)]">
+    <div className="recovery-shell">
+      <div className="recovery-card">
         <div className="mb-5 flex items-center gap-3">
-          <div className="rounded-full bg-[#EF476F]/10 p-3 text-[#EF476F]">
+          <div className="recovery-heading-icon">
             <Mail size={20} />
           </div>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#FF6B35]">
+            <p className="recovery-eyebrow text-[10px] font-semibold uppercase tracking-[0.3em]">
               Account access
             </p>
             <h1 className="font-['Bebas_Neue'] text-3xl text-[#2D1E2F]">
@@ -63,7 +63,7 @@ export function ForgotPasswordPage() {
           matches an existing profile.
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="recovery-form space-y-3">
           <label className="block text-sm font-medium text-[#2D1E2F]/80">
             <span className="mb-2 block">Email</span>
             <input
@@ -101,7 +101,7 @@ export function ForgotPasswordPage() {
         <div className="mt-4 text-center text-sm">
           <Link
             to="/"
-            className="font-semibold text-[#EF476F] underline-offset-4 hover:underline"
+            className="recovery-back"
           >
             Back to login
           </Link>

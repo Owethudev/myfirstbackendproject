@@ -8,7 +8,14 @@ import {
   useState,
 } from "react";
 import { ArrowUp } from "lucide-react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AnimatePresence, MotionConfig, motion } from "framer-motion";
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
 import "./App.css";
 import { AuthView } from "./components/AuthView.tsx";
 import { EventFeed } from "./components/EventFeed.tsx";
@@ -465,7 +472,7 @@ function AppShell() {
   };
 
   return (
-    <div className="min-h-screen bg-transparent text-[#2D1E2F]">
+    <div className="app-shell">
       <Header
         user={user}
         isGuest={isGuest}
@@ -489,30 +496,47 @@ function AppShell() {
       />
 
       <main
-        className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8"
+        className="app-main"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {!user && !isGuest ? (
-          <AuthView
-            mode={mode}
-            form={form}
-            message={message || localMessage || getSessionMessage()}
-            loading={loading}
-            isPaused={isPaused}
-            onModeChange={setMode}
-            onFormChange={setForm}
-            onSubmit={handleSubmit}
-            onPauseChange={setIsPaused}
-            onContinueAsGuest={() => {
-              setIsGuest(true);
-              setLocalMessage("");
-              setMessage("");
-            }}
-          />
-        ) : (
-          <>
+        <AnimatePresence mode="wait" initial={false}>
+          {!user && !isGuest ? (
+            <motion.div
+              key="auth"
+              className="state-transition"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.24 }}
+            >
+              <AuthView
+                mode={mode}
+                form={form}
+                message={message || localMessage || getSessionMessage()}
+                loading={loading}
+                isPaused={isPaused}
+                onModeChange={setMode}
+                onFormChange={setForm}
+                onSubmit={handleSubmit}
+                onPauseChange={setIsPaused}
+                onContinueAsGuest={() => {
+                  setIsGuest(true);
+                  setLocalMessage("");
+                  setMessage("");
+                }}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="community"
+              className="state-transition"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.24 }}
+            >
             {user ? (
               <ProfileDrawer
                 user={user}
@@ -531,8 +555,16 @@ function AppShell() {
                 onDeleteProfile={handleDeleteProfile}
               />
             ) : null}
-            {activeFeed === "projects" ? (
-              <>
+            <AnimatePresence mode="wait" initial={false}>
+              {activeFeed === "projects" ? (
+                <motion.div
+                  key="projects"
+                  className="feed-state-transition"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                >
                 <Feed
                   posts={filteredPosts}
                   user={user}
@@ -541,7 +573,7 @@ function AppShell() {
                   onDeletePost={handleDeletePost}
                 />
                 {hasMorePosts ? (
-                  <div className="mt-6 flex justify-center">
+                  <div className="load-more-wrap">
                     <button
                       type="button"
                       onClick={async () => {
@@ -549,15 +581,22 @@ function AppShell() {
                         await loadPosts(postPage + 1, true);
                         setLoadingMore(false);
                       }}
-                      className="rounded-full border border-[#2D1E2F]/10 bg-white px-5 py-2 text-sm font-semibold text-[#2D1E2F] shadow-sm transition hover:bg-[#FFF8F0]"
+                      className="load-more-button"
                     >
                       {loadingMore ? "Loading..." : "Load more"}
                     </button>
                   </div>
                 ) : null}
-              </>
-            ) : (
-              <>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="events"
+                  className="feed-state-transition"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                >
                 <EventFeed
                   events={filteredEvents}
                   user={user}
@@ -566,7 +605,7 @@ function AppShell() {
                   onDeleteEvent={handleDeleteEvent}
                 />
                 {hasMoreEvents ? (
-                  <div className="mt-6 flex justify-center">
+                  <div className="load-more-wrap">
                     <button
                       type="button"
                       onClick={async () => {
@@ -574,16 +613,18 @@ function AppShell() {
                         await loadEvents(eventPage + 1, true);
                         setLoadingMore(false);
                       }}
-                      className="rounded-full border border-[#2D1E2F]/10 bg-white px-5 py-2 text-sm font-semibold text-[#2D1E2F] shadow-sm transition hover:bg-[#FFF8F0]"
+                      className="load-more-button"
                     >
                       {loadingMore ? "Loading..." : "Load more"}
                     </button>
                   </div>
                 ) : null}
-              </>
-            )}
-          </>
-        )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       {user || isGuest ? (
@@ -591,32 +632,26 @@ function AppShell() {
           <button
             type="button"
             onClick={scrollToTop}
-            className="fixed bottom-24 right-4 z-20 flex h-12 w-12 items-center justify-center rounded-full border border-[#2D1E2F]/10 bg-[#FFF8F0] text-[#2D1E2F] shadow-[0_16px_50px_rgba(45,30,47,0.14)] transition hover:-translate-y-0.5"
+            className="return-top"
             aria-label="Return to top"
           >
             <ArrowUp size={18} />
           </button>
 
-          <nav className="sticky bottom-3 z-20 mx-auto mb-5 flex max-w-lg flex-wrap items-center justify-center gap-2 rounded-full border border-[#2D1E2F]/10 bg-[#FFF8F0]/90 px-3 py-2 shadow-[0_16px_50px_rgba(45,30,47,0.14)] backdrop-blur">
+          <nav className="community-nav">
             <button
               type="button"
               onClick={() => selectFeed("projects")}
-              className={`rounded-full px-6 py-2 text-sm font-semibold ${
-                activeFeed === "projects"
-                  ? "bg-[#EF476F] text-[#FFF8F0]"
-                  : "text-[#2D1E2F]"
-              }`}
+              className={activeFeed === "projects" ? "is-active" : ""}
+              aria-pressed={activeFeed === "projects"}
             >
               Feed
             </button>
             <button
               type="button"
               onClick={() => selectFeed("events")}
-              className={`rounded-full px-6 py-2 text-sm font-semibold ${
-                activeFeed === "events"
-                  ? "bg-[#FF6B35] text-[#FFF8F0]"
-                  : "text-[#2D1E2F]"
-              }`}
+              className={activeFeed === "events" ? "is-active" : ""}
+              aria-pressed={activeFeed === "events"}
             >
               Events
             </button>
@@ -624,7 +659,7 @@ function AppShell() {
               <button
                 type="button"
                 onClick={() => window.location.assign("/admin")}
-                className="rounded-full bg-[#2D1E2F] px-6 py-2 text-sm font-semibold text-[#FFF8F0]"
+                className="admin-nav-link"
               >
                 Dash
               </button>
@@ -659,33 +694,54 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AppRoutes() {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={location.pathname}
+        className="route-transition"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        <Routes location={location}>
+          <Route path="/" element={<AppShell />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <Suspense
+                  fallback={
+                    <div className="p-8 text-center text-sm text-[#2D1E2F]">
+                      Loading admin dashboard…
+                    </div>
+                  }
+                >
+                  <AdminDashboard />
+                </Suspense>
+              </AdminRoute>
+            }
+          />
+          <Route path="*" element={<AppShell />} />
+        </Routes>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 function App() {
   // Routing stays here so the smaller page parts do not need to know about routes.
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<AppShell />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-        <Route
-          path="/admin"
-          element={
-            <AdminRoute>
-              <Suspense
-                fallback={
-                  <div className="p-8 text-center text-sm text-[#2D1E2F]">
-                    Loading admin dashboard…
-                  </div>
-                }
-              >
-                <AdminDashboard />
-              </Suspense>
-            </AdminRoute>
-          }
-        />
-        <Route path="*" element={<AppShell />} />
-      </Routes>
-    </BrowserRouter>
+    <MotionConfig reducedMotion="user">
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </MotionConfig>
   );
 }
 

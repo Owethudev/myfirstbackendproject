@@ -1,13 +1,18 @@
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { AuthView } from "./components/AuthView";
 import { EventFeed } from "./components/EventFeed";
 import { Feed } from "./components/Feed";
 
+vi.mock("./components/OrbitalScene.tsx", () => ({
+  OrbitalScene: () => <div data-testid="orbital-scene" />,
+}));
+
 describe("AuthView", () => {
-  it("renders the authentication screen", () => {
-    render(
+  it("renders the authentication screen", async () => {
+    const { container } = render(
       <MemoryRouter>
         <AuthView
           mode="login"
@@ -24,9 +29,46 @@ describe("AuthView", () => {
       </MemoryRouter>,
     );
 
+    expect(await screen.findByTestId("orbital-scene")).toBeInTheDocument();
     expect(screen.getByText(/sign in/i)).toBeInTheDocument();
     expect(screen.getByText(/welcome back/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /continue as guest/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /browse as a guest/i })).toBeInTheDocument();
+    expect(container.querySelector(".auth-panel-icon img")).toBeInTheDocument();
+    expect(screen.queryByText(/a home for the next generation/i)).toBeNull();
+    expect(screen.queryByText(/01 \/ create/i)).toBeNull();
+  });
+
+  it("switches to signup fields when signup mode is selected", async () => {
+    const AuthModeHarness = () => {
+      const [mode, setMode] = useState<"login" | "signup">("login");
+
+      return (
+        <AuthView
+          mode={mode}
+          form={{ username: "", email: "", password: "" }}
+          message=""
+          loading={false}
+          isPaused={false}
+          onModeChange={setMode}
+          onFormChange={() => {}}
+          onSubmit={() => {}}
+          onPauseChange={() => {}}
+          onContinueAsGuest={() => {}}
+        />
+      );
+    };
+
+    render(
+      <MemoryRouter>
+        <AuthModeHarness />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Sign up" }));
+
+    expect(await screen.findByLabelText(/username/i)).toBeInTheDocument();
+    expect(await screen.findByText(/come on in/i)).toBeInTheDocument();
+    expect(await screen.findByTestId("orbital-scene")).toBeInTheDocument();
   });
 
   it("lets visitors continue without creating an account", () => {
@@ -49,7 +91,7 @@ describe("AuthView", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /continue as guest/i }));
+    fireEvent.click(screen.getByRole("button", { name: /browse as a guest/i }));
 
     expect(onContinueAsGuest).toHaveBeenCalledOnce();
   });
