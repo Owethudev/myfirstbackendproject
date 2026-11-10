@@ -429,9 +429,6 @@ body {
 .community-pill img {
   width: 16px;
   height: 16px;
-  object-fit: contain;
-  filter: invert(1);
-  mix-blend-mode: screen;
 }
 
 @keyframes conveyor {
@@ -480,17 +477,15 @@ body {
   height: 42px;
   flex: 0 0 auto;
   place-items: center;
+  border: 1px solid rgba(202, 255, 67, 0.38);
   border-radius: 14px;
   color: #293316;
-  background: #caff43;
+  background: #1a211a;
 }
 
 .auth-panel-icon img {
   width: 30px;
   height: 30px;
-  object-fit: contain;
-  filter: invert(1);
-  mix-blend-mode: screen;
 }
 
 .route-transition,

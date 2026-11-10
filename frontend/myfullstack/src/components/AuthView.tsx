@@ -90,7 +90,7 @@ export function AuthView({
           >
             {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((name, index) => (
               <span key={`${name}-${index}`} className="community-pill">
-                <img src={logo} alt="" /> {name}
+                <img className="brand-logo" src={logo} alt="" /> {name}
               </span>
             ))}
           </div>
@@ -119,7 +119,7 @@ export function AuthView({
             </AnimatePresence>
           </div>
           <div className="auth-panel-icon">
-            <img src={logo} alt="" />
+            <img className="brand-logo" src={logo} alt="" />
           </div>
         </div>
 
