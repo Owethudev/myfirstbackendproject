@@ -70,8 +70,21 @@ app.use((req, res) => {
     });
 });
 
-app.use((error, req, res, next) => {
+const isJsonParseError = (error) => {
+    if (!error || typeof error !== "object") {
+        return false;
+    }
+
     if (error instanceof SyntaxError && error.status === 400 && "body" in error) {
+        return true;
+    }
+
+    return error.type === "entity.parse.failed" ||
+        (typeof error.status === "number" && error.status === 400 && "body" in error);
+};
+
+app.use((error, req, res, next) => {
+    if (isJsonParseError(error)) {
         return res.status(400).json({
             success: false,
             message: "Invalid JSON payload.",

@@ -27,38 +27,32 @@ export function Feed({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: 0.06 }}
-      className="space-y-4"
+      className="content-feed project-feed"
     >
-      <div className="flex items-start justify-between gap-3 rounded-[1.5rem] border border-[#2D1E2F]/10 bg-[#FFF8F0]/75 p-4 shadow-sm">
+      <div className="feed-heading">
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#EF476F]">
+          <p className="eyebrow">
             Community feed
           </p>
-          <h2 className="mt-1 font-['Bebas_Neue'] text-2xl text-[#2D1E2F]">
+          <h2>
             SHOW US YOUR WORK
           </h2>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1 rounded-full border border-[#2D1E2F]/10 bg-[#FFF8F0] p-1">
+        <div className="view-switch">
           <button
             type="button"
             onClick={() => onViewModeChange("current")}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-              viewMode === "current"
-                ? "bg-[#EF476F] text-[#FFF8F0]"
-                : "text-[#2D1E2F]"
-            }`}
+            className={viewMode === "current" ? "is-active" : ""}
+            aria-pressed={viewMode === "current"}
           >
             List
           </button>
           <button
             type="button"
             onClick={() => onViewModeChange("grid")}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-              viewMode === "grid"
-                ? "bg-[#EF476F] text-[#FFF8F0]"
-                : "text-[#2D1E2F]"
-            }`}
+            className={viewMode === "grid" ? "is-active" : ""}
+            aria-pressed={viewMode === "grid"}
           >
             Grid
           </button>
@@ -66,7 +60,7 @@ export function Feed({
       </div>
 
       {posts.length === 0 ? (
-        <div className="rounded-[1.5rem] border border-dashed border-[#2D1E2F]/20 bg-[#FFF8F0]/70 p-6 text-center text-sm text-[#2D1E2F]/70">
+        <div className="feed-empty-state">
           No posts yet. Be the first to share a project and spark the feed.
         </div>
       ) : (
@@ -80,24 +74,24 @@ export function Feed({
               key={post._id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="overflow-hidden rounded-[1.75rem] border border-[#2D1E2F]/10 bg-[#FFF8F0] shadow-[0_16px_50px_rgba(45,30,47,0.10)]"
+              className="content-card"
             >
               <div
-                className="relative flex min-h-36 items-end justify-between px-5 py-5 text-[#2D1E2F]"
+                className="content-card-cover project-card-cover"
                 style={getCoverStyle(post.name)}
               >
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#2D1E2F]/70">
+                  <p className="card-author">
                     {post.author ? post.author.toUpperCase() : "CREATOR"}
                   </p>
-                  <h3 className="mt-2 font-['Bebas_Neue'] text-3xl leading-none">
+                  <h3 className="card-title">
                     {post.name}
                   </h3>
                 </div>
                 {isGridView && user && post.author === user.username ? (
                   <button
                     type="button"
-                    className="absolute right-4 top-4 rounded-full border border-[#2D1E2F]/15 bg-[#FFF8F0]/80 p-2.5 text-[#EF476F] transition hover:-translate-y-0.5"
+                    className="delete-content-button"
                     onClick={() => onDeletePost(post._id)}
                     aria-label="Delete post"
                   >
@@ -107,19 +101,19 @@ export function Feed({
               </div>
 
               {!isGridView ? (
-                <div className="space-y-4 p-5">
+                <div className="content-card-body">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-semibold text-[#2D1E2F]">
+                      <p className="content-card-name">
                         {post.name}
                       </p>
-                      <p className="text-sm text-[#2D1E2F]/70">
+                      <p className="content-card-meta">
                         Creator • {post.author ?? "Unknown"}
                       </p>
                     </div>
                   </div>
 
-                  <p className="text-sm leading-6 text-[#2D1E2F]/80">
+                  <p className="content-card-description">
                     {post.description}
                   </p>
 
@@ -127,17 +121,17 @@ export function Feed({
                     href={post.portfolio}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center text-sm font-semibold text-[#3D5A40] underline-offset-4 hover:text-[#EF476F] hover:underline"
+                    className="content-card-link"
                   >
                     View project / portfolio
                   </a>
 
-                  <div className="flex items-center justify-between gap-2 border-t border-[#2D1E2F]/10 pt-4">
+                  <div className="content-card-footer">
                     <div className="flex gap-2"></div>
                     {user && post.author === user.username ? (
                       <button
                         type="button"
-                        className="ml-2 rounded-full border p-2.5 text-[#EF476F] transition hover:-translate-y-0.5"
+                        className="delete-content-button"
                         onClick={() => onDeletePost(post._id)}
                         aria-label="Delete post"
                       >

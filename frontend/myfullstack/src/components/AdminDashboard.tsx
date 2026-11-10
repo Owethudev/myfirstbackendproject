@@ -272,7 +272,7 @@ export function AdminDashboard() {
   }, [selectedTab]);
 
   return (
-    <div className="min-h-screen bg-[#FFF8F0] p-6 text-[#2D1E2F]">
+    <div className="admin-shell min-h-screen p-6">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>

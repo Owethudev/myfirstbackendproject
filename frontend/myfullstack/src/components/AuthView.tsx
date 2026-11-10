@@ -2,13 +2,20 @@ import {
   type FormEvent,
   type Dispatch,
   type SetStateAction,
+  Suspense,
+  lazy,
   useState,
 } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Compass, Eye, EyeOff, Send, Sparkles } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowDownRight, ArrowUpRight, Eye, EyeOff, Send } from "lucide-react";
+import logo from "../assets/logo.png";
 import { MARQUEE_ITEMS } from "../constants.ts";
 import type { AuthForm, AuthMode } from "../types.ts";
+
+const OrbitalScene = lazy(() =>
+  import("./OrbitalScene.tsx").then((module) => ({ default: module.OrbitalScene })),
+);
 
 type AuthViewProps = {
   mode: AuthMode;
@@ -37,41 +44,53 @@ export function AuthView({
 }: AuthViewProps) {
   const [showPassword, setShowPassword] = useState(false);
 
-  // This part shows the welcome message and the login box before sign-in.
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+    <div className="auth-layout">
       <motion.section
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45 }}
-        className="glass-card overflow-hidden rounded-[2rem] border border-[#2D1E2F]/10 p-5 shadow-[0_20px_60px_rgba(45,30,47,0.16)] sm:p-7"
+        className="auth-story"
       >
-        <h2 className="mt-5 font-['Bebas_Neue'] text-5xl leading-none text-[#2D1E2F] sm:text-6xl">
-          SHOW YOUR WORK.
-          <br />
-          GROW TOGETHER.
-          <br />
-          BUILD TOGETHER.
-        </h2>
-        <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-[#2D1E2F]/10 bg-[#FFF8F0] p-4 sm:p-5">
-          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.25em] text-[#3D5A40]">
-            <Compass size={14} />
-            SNPL community
+        <div className="auth-hero-copy">
+          <div className="auth-hero-title">
+            <p className="eyebrow">SNPL PORT — CREATIVE COMMUNITY</p>
+            <h2>
+              Make room
+              <br />
+              for <span>what’s next.</span>
+            </h2>
+            <p className="auth-intro">
+              A place to put your work out there, find your people, and make something worth sharing.
+            </p>
+            <a className="auth-explore-link" href="#community">
+              Explore the community <ArrowDownRight size={17} />
+            </a>
+          </div>
+          <div className="auth-artwork">
+            <span className="artwork-caption">FORM / 001</span>
+            <Suspense fallback={<div className="orbital-fallback" />}>
+              <OrbitalScene />
+            </Suspense>
+            <span className="artwork-coordinate">36° 09' 12.0" N<br />115° 08' 32.4" W</span>
+          </div>
+        </div>
+        <div className="auth-community" id="community">
+          <div className="community-label">
+            <span className="eyebrow">Good things happen together</span>
+            <span className="community-count">A PLACE TO BEGIN <ArrowUpRight size={14} /></span>
           </div>
           <div
-            className="conveyor-track flex w-max gap-3"
+            className="conveyor-track"
             onMouseEnter={() => onPauseChange(true)}
             onMouseLeave={() => onPauseChange(false)}
             onTouchStart={() => onPauseChange(true)}
             onTouchEnd={() => onPauseChange(false)}
             style={{ animationPlayState: isPaused ? "paused" : "running" }}
           >
-            {MARQUEE_ITEMS.map((name, index) => (
-              <span
-                key={`${name}-${index}`}
-                className="rounded-full border border-[#2D1E2F]/10 bg-[#FFF8F0] px-4 py-2 text-sm font-semibold text-[#2D1E2F] shadow-sm"
-              >
-                {name}
+            {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((name, index) => (
+              <span key={`${name}-${index}`} className="community-pill">
+                <img src={logo} alt="" /> {name}
               </span>
             ))}
           </div>
@@ -82,32 +101,35 @@ export function AuthView({
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, delay: 0.05 }}
-        className="glass-card rounded-[2rem] border border-[#2D1E2F]/10 p-5 shadow-[0_20px_60px_rgba(45,30,47,0.16)] sm:p-7"
+        className="auth-panel"
       >
-        <div className="flex items-center justify-between">
+        <div className="auth-panel-heading">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#FF6B35]">
-              Sign in
-            </p>
-            <h3 className="mt-1 font-['Bebas_Neue'] text-3xl text-[#2D1E2F]">
-              {mode === "login" ? "WELCOME BACK" : "JOIN THE ROOM"}
-            </h3>
+            <p className="eyebrow">{mode === "login" ? "Sign in" : "Your next chapter"}</p>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.h3
+                key={mode}
+                initial={{ opacity: 0, y: 7 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -7 }}
+                transition={{ duration: 0.18 }}
+              >
+              {mode === "login" ? "Welcome back." : "Come on in."}
+              </motion.h3>
+            </AnimatePresence>
           </div>
-          <div className="rounded-full bg-[#F9B208]/20 p-3 text-[#FF6B35]">
-            <Sparkles size={20} />
+          <div className="auth-panel-icon">
+            <img src={logo} alt="" />
           </div>
         </div>
 
-        <div className="mt-5 flex rounded-full border border-[#2D1E2F]/10 bg-[#FFF8F0]/70 p-1">
+        <div className="auth-mode-switch">
           {(["login", "signup"] as AuthMode[]).map((option) => (
             <button
               key={option}
               type="button"
-              className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                mode === option
-                  ? "bg-[#2D1E2F] text-[#FFF8F0] shadow"
-                  : "text-[#2D1E2F]/70"
-              }`}
+              className={mode === option ? "is-active" : ""}
+              aria-pressed={mode === option}
               onClick={() => onModeChange(option)}
             >
               {option === "login" ? "Login" : "Sign up"}
@@ -115,100 +137,100 @@ export function AuthView({
           ))}
         </div>
 
-        <form onSubmit={onSubmit} className="mt-5 space-y-3">
-          {mode === "signup" && (
-            <label className="block text-sm font-medium text-[#2D1E2F]/80">
-              <span className="mb-2 block">Username</span>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.form
+            key={mode}
+            onSubmit={onSubmit}
+            className="auth-form"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+          >
+            {mode === "signup" && (
+              <label className="auth-field">
+                <span>Username</span>
+                <input
+                  type="text"
+                  value={form.username}
+                  onChange={(event) =>
+                    onFormChange({ ...form, username: event.target.value })
+                  }
+                  placeholder="Name"
+                  required
+                />
+              </label>
+            )}
+
+            <label className="auth-field">
+              <span>Email address</span>
               <input
-                type="text"
-                value={form.username}
+                type="email"
+                value={form.email}
                 onChange={(event) =>
-                  onFormChange({ ...form, username: event.target.value })
+                  onFormChange({ ...form, email: event.target.value })
                 }
-                className="w-full rounded-2xl border border-[#2D1E2F]/10 bg-[#FFF8F0] px-4 py-3 outline-none transition focus:border-[#EF476F] focus:ring-2 focus:ring-[#EF476F]/30"
-                placeholder="Name"
+                placeholder="you@example.com"
                 required
               />
             </label>
-          )}
 
-          <label className="block text-sm font-medium text-[#2D1E2F]/80">
-            <span className="mb-2 block">Email</span>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(event) =>
-                onFormChange({ ...form, email: event.target.value })
-              }
-              className="w-full rounded-2xl border border-[#2D1E2F]/10 bg-[#FFF8F0] px-4 py-3 outline-none transition focus:border-[#EF476F] focus:ring-2 focus:ring-[#EF476F]/30"
-              placeholder="you@class.com"
-              required
-            />
-          </label>
+            <label className="auth-field">
+              <span>Password</span>
+              <div className="auth-password-wrap">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={form.password}
+                  onChange={(event) =>
+                    onFormChange({ ...form, password: event.target.value })
+                  }
+                  placeholder="Enter your password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((value) => !value)}
+                  className="password-visibility"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </label>
 
-          <label className="block text-sm font-medium text-[#2D1E2F]/80">
-            <span className="mb-2 block">Password</span>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={form.password}
-                onChange={(event) =>
-                  onFormChange({ ...form, password: event.target.value })
-                }
-                className="w-full rounded-2xl border border-[#2D1E2F]/10 bg-[#FFF8F0] px-4 py-3 pr-12 outline-none transition focus:border-[#EF476F] focus:ring-2 focus:ring-[#EF476F]/30"
-                placeholder="••••••"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((value) => !value)}
-                className="absolute inset-y-0 right-3 flex items-center text-[#2D1E2F]/65 transition hover:text-[#2D1E2F]"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </label>
+            <button
+              type="submit"
+              disabled={loading}
+              className="auth-submit"
+            >
+              {loading ? "Working..." : mode === "login" ? "Login" : "Sign up"}
+              <span className="submit-icon"><Send size={15} /></span>
+            </button>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#EF476F] px-4 py-3 font-semibold text-[#FFF8F0] shadow-[0_12px_35px_rgba(239,71,111,0.24)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {loading ? "Working..." : mode === "login" ? "Login" : "Sign up"}
-            <Send size={16} />
-          </button>
-
-          {mode === "login" ? (
-            <div className="text-center text-sm">
-              <Link
-                to="/forgot-password"
-                className="font-semibold text-[#EF476F] underline-offset-4 hover:underline"
-              >
-                Forgot password?
-              </Link>
-            </div>
-          ) : null}
-        </form>
+            {mode === "login" ? (
+              <div className="forgot-link">
+                <Link to="/forgot-password">Forgot password?</Link>
+              </div>
+            ) : null}
+          </motion.form>
+        </AnimatePresence>
 
         {message ? (
-          <p className="mt-4 rounded-2xl border border-[#F9B208]/30 bg-[#F9B208]/10 px-4 py-3 text-sm text-[#2D1E2F]">
+          <p className="auth-message" role="status">
             {message}
           </p>
         ) : null}
 
-        <div className="mt-5 border-t border-[#2D1E2F]/10 pt-4 text-center">
-          <p className="text-sm text-[#2D1E2F]/70">
-            Just looking around?
-          </p>
+        <div className="guest-entry">
+          <p>Just looking around?</p>
           <button
             type="button"
             onClick={onContinueAsGuest}
-            className="mt-2 rounded-full border border-[#2D1E2F]/15 px-5 py-2 text-sm font-semibold text-[#2D1E2F] transition hover:bg-[#FFF8F0]"
           >
-            Continue as guest
+            Browse as a guest <ArrowUpRight size={15} />
           </button>
         </div>
+        <p className="auth-legal">By continuing, you agree to create with respect and give others room to grow.</p>
       </motion.section>
     </div>
   );

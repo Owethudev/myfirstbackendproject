@@ -68,14 +68,14 @@ export function ResetPasswordPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md items-center justify-center px-4 py-8">
-      <div className="w-full rounded-[2rem] border border-[#2D1E2F]/10 bg-[#FFF8F0]/95 p-6 shadow-[0_20px_60px_rgba(45,30,47,0.16)]">
+    <div className="recovery-shell">
+      <div className="recovery-card">
         <div className="mb-5 flex items-center gap-3">
-          <div className="rounded-full bg-[#FF6B35]/10 p-3 text-[#FF6B35]">
+          <div className="recovery-heading-icon">
             <ShieldCheck size={20} />
           </div>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#FF6B35]">
+            <p className="recovery-eyebrow text-[10px] font-semibold uppercase tracking-[0.3em]">
               Secure account
             </p>
             <h1 className="font-['Bebas_Neue'] text-3xl text-[#2D1E2F]">
@@ -84,7 +84,7 @@ export function ResetPasswordPage() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="recovery-form space-y-3">
           <label className="block text-sm font-medium text-[#2D1E2F]/80">
             <span className="mb-2 block">New password</span>
             <input
@@ -109,8 +109,8 @@ export function ResetPasswordPage() {
             />
           </label>
 
-          <div className="rounded-2xl border border-[#2D1E2F]/10 bg-[#FFF8F0] px-4 py-3 text-sm text-[#2D1E2F]/75">
-            <div className="mb-2 flex items-center gap-2 font-semibold text-[#2D1E2F]">
+          <div className="password-requirements rounded-2xl border px-4 py-3 text-sm">
+            <div className="mb-2 flex items-center gap-2 font-semibold">
               <Lock size={15} />
               Password requirements
             </div>
@@ -146,7 +146,7 @@ export function ResetPasswordPage() {
         <div className="mt-4 text-center text-sm">
           <Link
             to="/"
-            className="font-semibold text-[#EF476F] underline-offset-4 hover:underline"
+            className="recovery-back"
           >
             Back to login
           </Link>
