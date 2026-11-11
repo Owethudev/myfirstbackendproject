@@ -1,13 +1,9 @@
 import { AuditLog } from "../models/auditlog.model.js";
 
-const sensitiveFields = [
-    "password",
-    "currentPassword",
-    "newPassword",
-    "token",
-    "resetPasswordToken",
-    "verificationToken",
-];
+const isSensitiveField = (field) => {
+    const normalizedField = field.toLowerCase().replace(/[-_]/g, "");
+    return normalizedField.includes("token") || normalizedField.includes("password");
+};
 
 const sanitizeObject = (value) => {
     if (value === null || value === undefined) return value;
@@ -16,7 +12,7 @@ const sanitizeObject = (value) => {
     }
     if (typeof value === "object") {
         return Object.entries(value).reduce((result, [key, entryValue]) => {
-            if (sensitiveFields.includes(key)) {
+            if (isSensitiveField(key)) {
                 result[key] = "[REDACTED]";
             } else {
                 result[key] = sanitizeObject(entryValue);
@@ -25,6 +21,38 @@ const sanitizeObject = (value) => {
         }, {});
     }
     return value;
+};
+
+const sanitizeAuditPath = (requestUrl) => {
+    const url = String(requestUrl || "");
+    const hashIndex = url.indexOf("#");
+    const fragment = hashIndex === -1 ? "" : url.slice(hashIndex);
+    const urlWithoutFragment = hashIndex === -1 ? url : url.slice(0, hashIndex);
+    const queryIndex = urlWithoutFragment.indexOf("?");
+    const pathname =
+        queryIndex === -1
+            ? urlWithoutFragment
+            : urlWithoutFragment.slice(0, queryIndex);
+    const query =
+        queryIndex === -1 ? "" : urlWithoutFragment.slice(queryIndex + 1);
+    const safePathname = pathname.replace(
+        /(\/api\/v1\/users\/verify\/)[^/?#]+/i,
+        "$1[REDACTED]",
+    );
+
+    if (!query) {
+        return `${safePathname}${fragment}`;
+    }
+
+    const searchParams = new URLSearchParams(query);
+    for (const key of searchParams.keys()) {
+        if (isSensitiveField(key)) {
+            searchParams.set(key, "[REDACTED]");
+        }
+    }
+
+    const safeQuery = searchParams.toString();
+    return `${safePathname}${safeQuery ? `?${safeQuery}` : ""}${fragment}`;
 };
 
 const auditMiddleware = (req, res, next) => {
@@ -41,9 +69,9 @@ const auditMiddleware = (req, res, next) => {
         email: user.email || null,
         role: user.role || "guest",
         method: req.method,
-        path: req.originalUrl || req.url,
-        query: req.query || {},
-        params: req.params || {},
+        path: sanitizeAuditPath(req.originalUrl || req.url),
+        query: sanitizeObject(req.query || {}),
+        params: sanitizeObject(req.params || {}),
         body: sanitizeObject(req.body || {}),
         ipAddress: req.ip || req.headers["x-forwarded-for"] || req.connection?.remoteAddress || null,
     });
@@ -61,4 +89,5 @@ const auditMiddleware = (req, res, next) => {
     next();
 };
 
+export { sanitizeAuditPath, sanitizeObject };
 export default auditMiddleware;
