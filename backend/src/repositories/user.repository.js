@@ -7,7 +7,20 @@ const findUserByEmail = async (email) => User.findOne({ email });
 
 const findUserById = async (id) => User.findById(id);
 
-const findUserByVerificationToken = async (token) => User.findOne({ verificationToken: token });
+const buildVerificationTokenConsumeQuery = (token) => ({
+  verificationToken: token,
+  verified: false,
+});
+
+const consumeUserVerificationToken = async (token) =>
+  User.findOneAndUpdate(
+    buildVerificationTokenConsumeQuery(token),
+    {
+      $set: { verified: true },
+      $unset: { verificationToken: 1 },
+    },
+    { new: true },
+  );
 
 const buildActiveResetTokenQuery = (token, now = new Date()) => ({
   resetPasswordToken: token,
@@ -38,7 +51,8 @@ export {
   createUser,
   findUserByEmail,
   findUserById,
-  findUserByVerificationToken,
+  buildVerificationTokenConsumeQuery,
+  consumeUserVerificationToken,
   buildActiveResetTokenQuery,
   findUserByResetToken,
   findUsers,
@@ -52,7 +66,8 @@ export default {
   createUser,
   findUserByEmail,
   findUserById,
-  findUserByVerificationToken,
+  buildVerificationTokenConsumeQuery,
+  consumeUserVerificationToken,
   buildActiveResetTokenQuery,
   findUserByResetToken,
   findUsers,

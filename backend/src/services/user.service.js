@@ -6,11 +6,11 @@ import { createSession, revokeAllUserSessions, revokeSession } from "../services
 import {
   countPosts,
   countUsers,
+  consumeUserVerificationToken,
   createUser,
   deleteUserByEmail,
   findUserByEmail,
   findUserById,
-  findUserByVerificationToken,
   findUsers,
   saveUser,
 } from "../repositories/user.repository.js";
@@ -77,14 +77,10 @@ const verifyUser = async (token) => {
     return createError(400, "Verification token is required");
   }
 
-  const user = await findUserByVerificationToken(token);
+  const user = await consumeUserVerificationToken(token);
   if (!user) {
     return createError(400, "Invalid or expired verification token");
   }
-
-  user.verified = true;
-  user.verificationToken = undefined;
-  await saveUser(user);
 
   return createResult(200, {
     redirectUrl: `${process.env.FRONTEND_URL || process.env.VITE_API_BASE_URL || process.env.BACKEND_URL || "https://snpl-port.onrender.com"}/?verified=1`,
