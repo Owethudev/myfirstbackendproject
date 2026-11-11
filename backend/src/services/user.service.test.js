@@ -1,10 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildVerificationTokenExpiry,
   logoutUser,
   resolveProfileUpdateTargetId,
   updateUser,
 } from "./user.service.js";
+
+test("new verification tokens expire after 24 hours", () => {
+  const createdAt = new Date("2026-01-01T00:00:00.000Z");
+  const expiry = buildVerificationTokenExpiry(createdAt);
+
+  assert.equal(expiry.getTime() - createdAt.getTime(), 24 * 60 * 60 * 1000);
+});
 
 test("ordinary users can update only their own profile", () => {
   const principal = { id: "user-1", role: "user" };
