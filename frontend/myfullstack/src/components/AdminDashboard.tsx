@@ -179,6 +179,7 @@ function getStoredUser(): UserProfile | null {
 
 export function AdminDashboard() {
   const navigate = useNavigate();
+  const [currentUser] = useState(getStoredUser);
   const [stats, setStats] = useState<AdminStats>(DEFAULT_STATS);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [reportedPosts, setReportedPosts] = useState<ModerationPost[]>([]);
@@ -288,8 +289,7 @@ export function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    const user = getStoredUser();
-    if (!user || user.role !== "admin") {
+    if (!currentUser || currentUser.role !== "admin") {
       navigate("/", { replace: true });
       return;
     }
@@ -319,7 +319,7 @@ export function AdminDashboard() {
       currentRequestIds.users += 1;
       currentRequestIds.reports += 1;
     };
-  }, [loadReportedPosts, loadStats, loadUsers, navigate, search]);
+  }, [currentUser, loadReportedPosts, loadStats, loadUsers, navigate, search]);
 
   useEffect(() => {
     const currentRequestIds = requestIds.current;
@@ -731,9 +731,17 @@ export function AdminDashboard() {
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteUser(user._id)}
+                                  disabled={user._id === currentUser?.id}
+                                  title={
+                                    user._id === currentUser?.id
+                                      ? "You cannot delete your own account"
+                                      : undefined
+                                  }
                                   className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-600"
                                 >
-                                  Delete
+                                  {user._id === currentUser?.id
+                                    ? "Cannot delete self"
+                                    : "Delete"}
                                 </button>
                               </div>
                             </td>

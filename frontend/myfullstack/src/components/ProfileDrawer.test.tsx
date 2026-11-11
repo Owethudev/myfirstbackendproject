@@ -1,8 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ProfileDrawer } from "./ProfileDrawer";
 
-const createProps = (role: "user" | "admin", onDeleteProfile = vi.fn()) => ({
+const createProps = (role: "user" | "admin") => ({
   user: {
     id: `${role}-1`,
     username: role,
@@ -21,7 +21,6 @@ const createProps = (role: "user" | "admin", onDeleteProfile = vi.fn()) => ({
   onEventSubmit: vi.fn(),
   onLogout: vi.fn(),
   onLogoutEverywhere: vi.fn(),
-  onDeleteProfile,
 });
 
 describe("ProfileDrawer account deletion access", () => {
@@ -31,11 +30,9 @@ describe("ProfileDrawer account deletion access", () => {
     expect(screen.queryByRole("button", { name: "Delete profile" })).toBeNull();
   });
 
-  it("offers deletion to an admin and invokes its callback", () => {
-    const onDeleteProfile = vi.fn();
-    render(<ProfileDrawer {...createProps("admin", onDeleteProfile)} />);
+  it("does not offer self-deletion to an admin", () => {
+    render(<ProfileDrawer {...createProps("admin")} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Delete profile" }));
-    expect(onDeleteProfile).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("button", { name: "Delete profile" })).toBeNull();
   });
 });

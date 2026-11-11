@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { User } from "../models/user.model.js";
 import {
   buildVerificationTokenExpiry,
   logoutUser,
+  registerUser,
   resolveProfileUpdateTargetId,
+  deleteUser,
   updateUser,
 } from "./user.service.js";
 
@@ -12,6 +15,49 @@ test("new verification tokens expire after 24 hours", () => {
   const expiry = buildVerificationTokenExpiry(createdAt);
 
   assert.equal(expiry.getTime() - createdAt.getTime(), 24 * 60 * 60 * 1000);
+});
+
+test("registration deletes the newly created account when verification email delivery fails", async () => {
+  const originalFindOne = User.findOne;
+  const originalCreate = User.create;
+  const originalFindOneAndDelete = User.findOneAndDelete;
+  const createdUsers = [];
+  const deletedEmails = [];
+
+  User.findOne = async () => null;
+  User.create = async (payload) => {
+    const user = { _id: "new-user-1", ...payload };
+    createdUsers.push(user);
+    return user;
+  };
+  User.findOneAndDelete = async (query) => {
+    deletedEmails.push(query.email);
+    return createdUsers.find((user) => user.email === query.email) ?? null;
+  };
+
+  try {
+    const result = await registerUser(
+      {
+        username: "new-member",
+        email: "New.Member@example.test",
+        password: "password123",
+      },
+      async () => {
+        throw new Error("Email provider unavailable");
+      },
+    );
+
+    assert.equal(result.statusCode, 500);
+    assert.equal(
+      result.payload.message,
+      "Account could not be created because the verification email could not be sent.",
+    );
+    assert.deepEqual(deletedEmails, ["new.member@example.test"]);
+  } finally {
+    User.findOne = originalFindOne;
+    User.create = originalCreate;
+    User.findOneAndDelete = originalFindOneAndDelete;
+  }
 });
 
 test("ordinary users can update only their own profile", () => {
@@ -50,4 +96,52 @@ test("logout rejects requests without an authenticated session context", async (
 
   assert.equal(result.statusCode, 401);
   assert.equal(result.payload.message, "Session expired.");
+});
+
+test("admins cannot delete their own account, even with email case or whitespace changes", async () => {
+  const originalFindOneAndDelete = User.findOneAndDelete;
+  let deleteCalled = false;
+  User.findOneAndDelete = async () => {
+    deleteCalled = true;
+    return { email: "admin@example.test" };
+  };
+
+  try {
+    const result = await deleteUser(" Admin@Example.Test ", {
+      id: "admin-1",
+      email: "admin@example.test",
+      role: "admin",
+    });
+
+    assert.equal(result.statusCode, 403);
+    assert.equal(
+      result.payload.message,
+      "Administrators cannot delete their own account",
+    );
+    assert.equal(deleteCalled, false);
+  } finally {
+    User.findOneAndDelete = originalFindOneAndDelete;
+  }
+});
+
+test("admins can still delete another account", async () => {
+  const originalFindOneAndDelete = User.findOneAndDelete;
+  let deletedEmail;
+  User.findOneAndDelete = async (query) => {
+    deletedEmail = query.email;
+    return { email: query.email };
+  };
+
+  try {
+    const result = await deleteUser("member@example.test", {
+      id: "admin-1",
+      email: "admin@example.test",
+      role: "admin",
+    });
+
+    assert.equal(result.statusCode, 200);
+    assert.equal(deletedEmail, "member@example.test");
+  } finally {
+    User.findOneAndDelete = originalFindOneAndDelete;
+  }
 });

@@ -75,7 +75,7 @@ const updateUser = async (req, res) => {
 // This deletes a user from the database.
 const deleteUser = async (req, res) => {
     try {
-        const result = await deleteUserService(req.body.email);
+        const result = await deleteUserService(req.body.email, req.user);
         return res.status(result.statusCode).json(result.payload);
     } catch (error) {
         return handleControllerError(res, error, "Unable to delete user");
