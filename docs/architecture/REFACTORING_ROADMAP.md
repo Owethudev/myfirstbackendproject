@@ -83,6 +83,13 @@ Priority follows security and preservation constraints. Priority order has been 
 - **Regression risks:** retrying email can create multiple tokens/emails; adding infrastructure increases operational complexity.
 - **Acceptance:** only currently supported features are altered; async failures are visible and recoverable; no duplicate/destructive side effects.
 
+### Implementation status
+
+- The existing posts and events feeds already use explicit loading, ready, error, retry, pagination, and latest-request-wins states; see `docs/review/COMMUNITY_FEED_REQUEST_STATES_IMPLEMENTATION_REPORT.md`.
+- Password-reset email delivery now preserves the generic existing/unknown-account response when delivery fails, avoids exposing provider details, and documents that retries replace earlier reset links; see `docs/review/ASYNC_WORKFLOW_RELIABILITY_IMPLEMENTATION_REPORT.md`.
+- Registration email-failure account retention remains unchanged because deleting or retaining a newly created account is a product/security policy decision.
+- Comments and notification queues remain unsupported and must not be added without an approved product specification.
+
 ## Dependency map
 
 ```mermaid

@@ -3,7 +3,67 @@ import crypto from "node:crypto";
 import test from "node:test";
 import { Session } from "../models/session.model.js";
 import { User } from "../models/user.model.js";
-import { resetPassword } from "./auth.service.js";
+import { forgotPassword, resetPassword } from "./auth.service.js";
+
+test("password reset email failures keep the response generic and allow retry", async () => {
+  const originalFindOne = User.findOne;
+  const originalConsoleError = console.error;
+  const email = "member@example.test";
+  const user = {
+    email,
+    username: "member",
+    resetPasswordToken: undefined,
+    resetPasswordExpires: undefined,
+    saveCount: 0,
+    async save() {
+      this.saveCount += 1;
+      return this;
+    },
+  };
+  const logEntries = [];
+  const sentResetUrls = [];
+
+  User.findOne = async (query) => query.email === email ? user : null;
+  console.error = (...args) => logEntries.push(args);
+
+  try {
+    const unknownAccountResult = await forgotPassword(
+      "unknown@example.test",
+      async () => {
+        throw new Error("Email should not be sent for unknown accounts");
+      },
+    );
+    const failedDeliveryResult = await forgotPassword(email, async () => {
+      throw new Error("Provider response contains sensitive details");
+    });
+
+    assert.deepEqual(failedDeliveryResult, unknownAccountResult);
+    assert.equal(failedDeliveryResult.statusCode, 200);
+    assert.equal(
+      failedDeliveryResult.payload.message,
+      "If an account exists with that email, we'll try to send a password reset link. If it doesn't arrive, submit another request; only the newest link will work.",
+    );
+    assert.equal(user.saveCount, 1);
+    assert.match(user.resetPasswordToken, /^[a-f0-9]{64}$/);
+    assert.equal(logEntries.length, 1);
+    assert.deepEqual(logEntries[0], ["Password reset email delivery failed"]);
+
+    const failedTokenHash = user.resetPasswordToken;
+    const retryResult = await forgotPassword(email, async ({ resetUrl }) => {
+      sentResetUrls.push(resetUrl);
+    });
+    const retryToken = new URL(sentResetUrls[0]).pathname.split("/").at(-1);
+    const retryTokenHash = crypto.createHash("sha256").update(retryToken).digest("hex");
+
+    assert.deepEqual(retryResult, unknownAccountResult);
+    assert.notEqual(retryTokenHash, failedTokenHash);
+    assert.equal(user.resetPasswordToken, retryTokenHash);
+    assert.equal(user.saveCount, 2);
+  } finally {
+    User.findOne = originalFindOne;
+    console.error = originalConsoleError;
+  }
+});
 
 test("successful password reset revokes the user's active sessions", async () => {
   const originalFindOne = User.findOne;
