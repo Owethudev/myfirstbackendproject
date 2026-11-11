@@ -15,6 +15,11 @@ import {
   saveUser,
 } from "../repositories/user.repository.js";
 
+const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+
+const buildVerificationTokenExpiry = (now = new Date()) =>
+  new Date(now.getTime() + VERIFICATION_TOKEN_TTL_MS);
+
 const normalizeEmail = (email) => (typeof email === "string" ? email.trim().toLowerCase() : "");
 
 const validateRequiredFields = (fields, payload) => {
@@ -43,6 +48,7 @@ const registerUser = async ({ username, email, password }) => {
     password,
     verified: false,
     verificationToken,
+    verificationTokenExpires: buildVerificationTokenExpiry(),
   });
 
   const baseUrl = process.env.BACKEND_URL || process.env.VITE_API_BASE_URL || "https://snpl-port.onrender.com";
@@ -304,6 +310,7 @@ const getAdminStats = async () => {
 };
 
 export {
+  buildVerificationTokenExpiry,
   registerUser,
   verifyUser,
   loginUser,

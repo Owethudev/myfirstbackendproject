@@ -7,17 +7,21 @@ const findUserByEmail = async (email) => User.findOne({ email });
 
 const findUserById = async (id) => User.findById(id);
 
-const buildVerificationTokenConsumeQuery = (token) => ({
+const buildVerificationTokenConsumeQuery = (token, now = new Date()) => ({
   verificationToken: token,
   verified: false,
+  $or: [
+    { verificationTokenExpires: { $gt: now } },
+    { verificationTokenExpires: null },
+  ],
 });
 
-const consumeUserVerificationToken = async (token) =>
+const consumeUserVerificationToken = async (token, now = new Date()) =>
   User.findOneAndUpdate(
-    buildVerificationTokenConsumeQuery(token),
+    buildVerificationTokenConsumeQuery(token, now),
     {
       $set: { verified: true },
-      $unset: { verificationToken: 1 },
+      $unset: { verificationToken: 1, verificationTokenExpires: 1 },
     },
     { new: true },
   );
@@ -32,7 +36,7 @@ const findUserByResetToken = async (token, now = new Date()) =>
 
 const findUsers = async ({ query = {}, skip = 0, limit = 20, sort = { createdAt: -1 } }) => {
   const [items, totalItems] = await Promise.all([
-    User.find(query).select("-password -verificationToken -resetPasswordToken -resetPasswordExpires").sort(sort).skip(skip).limit(limit),
+    User.find(query).select("-password -verificationToken -verificationTokenExpires -resetPasswordToken -resetPasswordExpires").sort(sort).skip(skip).limit(limit),
     User.countDocuments(query),
   ]);
 
