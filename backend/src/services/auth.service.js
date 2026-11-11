@@ -10,7 +10,7 @@ const normalizeEmail = (email) => (typeof email === "string" ? email.trim().toLo
 
 const isValidPassword = (password) => typeof password === "string" && password.trim().length >= 6;
 
-const forgotPassword = async (email) => {
+const forgotPassword = async (email, sendResetEmail = sendPasswordResetEmail) => {
   const normalizedEmail = normalizeEmail(email);
 
   if (!EMAIL_REGEX.test(normalizedEmail)) {
@@ -31,20 +31,19 @@ const forgotPassword = async (email) => {
     const resetUrl = `${frontendBaseUrl}/reset-password/${rawToken}`;
 
     try {
-      await sendPasswordResetEmail({
+      await sendResetEmail({
         to: user.email,
         username: user.username,
         resetUrl,
       });
-    } catch (emailError) {
-      return createError(500, "Unable to send password reset email at this time.", {
-        error: emailError.message,
-      });
+    } catch {
+      console.error("Password reset email delivery failed");
     }
   }
 
   return createResult(200, {
-    message: "If an account exists with that email, a password reset link has been sent.",
+    message:
+      "If an account exists with that email, we'll try to send a password reset link. If it doesn't arrive, submit another request; only the newest link will work.",
   });
 };
 

@@ -59,8 +59,12 @@ export function ForgotPasswordPage() {
         </div>
 
         <p className="mb-4 text-sm leading-6 text-[#2D1E2F]/75">
-          Enter the email on your account and we will send a reset link if it
+          Enter your account email and we&apos;ll try to send a reset link if it
           matches an existing profile.
+        </p>
+        <p className="mb-4 text-sm leading-6 text-[#2D1E2F]/75">
+          If no email arrives, submit another request. Only the newest reset
+          link will work.
         </p>
 
         <form onSubmit={handleSubmit} className="recovery-form space-y-3">
@@ -87,13 +91,19 @@ export function ForgotPasswordPage() {
         </form>
 
         {message ? (
-          <p className="mt-4 rounded-2xl border border-[#F9B208]/30 bg-[#F9B208]/10 px-4 py-3 text-sm text-[#2D1E2F]">
+          <p
+            role="status"
+            className="mt-4 rounded-2xl border border-[#F9B208]/30 bg-[#F9B208]/10 px-4 py-3 text-sm text-[#2D1E2F]"
+          >
             {message}
           </p>
         ) : null}
 
         {error ? (
-          <p className="mt-4 rounded-2xl border border-[#EF476F]/20 bg-[#EF476F]/10 px-4 py-3 text-sm text-[#EF476F]">
+          <p
+            role="alert"
+            className="mt-4 rounded-2xl border border-[#EF476F]/20 bg-[#EF476F]/10 px-4 py-3 text-sm text-[#EF476F]"
+          >
             {error}
           </p>
         ) : null}
