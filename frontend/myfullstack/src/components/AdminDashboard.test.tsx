@@ -54,13 +54,23 @@ const makeUser = (id: string, username: string) => ({
   suspended: false,
 });
 
+const makeAdmin = (id: string, username: string) => ({
+  ...makeUser(id, username),
+  role: "admin" as const,
+});
+
 const mountDashboard = async (
   requests: Map<string, ReturnType<typeof createDeferred<UserListResponse>>>,
   options: DashboardOptions = {},
 ) => {
   localStorage.setItem(
     "snpl_user",
-    JSON.stringify({ id: "admin-1", username: "admin", role: "admin" }),
+    JSON.stringify({
+      id: "admin-1",
+      username: "admin",
+      email: "admin@example.test",
+      role: "admin",
+    }),
   );
   localStorage.setItem("snpl_token", "test-token");
 
@@ -324,6 +334,25 @@ describe("AdminDashboard user search", () => {
       expect(deleteBody).toEqual({ email: "member@example.test" });
       expect(screen.queryByText("member")).toBeNull();
     });
+  });
+
+  it("does not offer admins a delete action for their own account", async () => {
+    const userRequest = createDeferred<UserListResponse>();
+    const requests = new Map([["", userRequest]]);
+    await mountDashboard(requests);
+    await act(async () => {
+      userRequest.resolve({
+        items: [
+          makeAdmin("admin-1", "admin"),
+          makeUser("user-1", "member"),
+        ],
+      });
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Cannot delete self" }),
+    ).toBeDisabled();
+    expect(screen.getAllByRole("button", { name: "Delete" })).toHaveLength(1);
   });
 
   it("distinguishes audit-log request errors from a successful empty result", async () => {

@@ -19,8 +19,7 @@ No database migration, production data operation, deployment, environment change
 ### Account deletion
 
 - The backend remains authoritative: `DELETE /api/v1/users/delete` still requires an admin and still expects an email.
-- The profile drawer presents its existing delete action only to an admin. This is a presentation guard, not an authorization control.
-- The profile drawer calls the authenticated API client and signs out only after a successful response. A failed request reports an error without clearing the current authentication state.
+- The profile drawer does not offer self-deletion. Account deletion is available only through the admin dashboard for other accounts.
 - The admin dashboard resolves the selected user ID against its loaded users and sends that user's email, matching the existing backend request contract. A target no longer in the loaded list is reported rather than deleted.
 - No self-service deletion endpoint, retention policy, cascade, or database deletion behavior was added.
 
@@ -39,7 +38,7 @@ No database migration, production data operation, deployment, environment change
 
 Password reset previously changed the password without revoking persisted sessions. It now invalidates the target user's active sessions as part of successful reset processing.
 
-The profile drawer previously showed an operation to ordinary users even though the server rejected non-admin deletion requests; its client call also bypassed the authenticated API helper and signed the user out on failure. The action now matches the admin-only server guard and only signs out on reported success.
+The profile drawer previously showed deletion to an ordinary user even though the server rejected non-admin deletion requests, and subsequent UI alignment briefly exposed admin self-deletion. The action has been removed from the profile drawer; the admin dashboard retains deletion for other accounts, and the backend rejects self-deletion.
 
 The admin dashboard previously sent `{ id }`, while the existing delete controller/service expects `{ email }`. It now resolves the selected user from the loaded list and sends that email.
 
@@ -58,9 +57,35 @@ No pre-change baseline was captured on this feature branch. No new failures were
 - No endpoint, request/response shape, environment variable, dependency, or MongoDB schema was changed.
 - Session revocation is scoped by `{ userId, active: true }`; the backend reset-token validity check remains in place.
 - The UI role check does not replace server-side authorization. The delete route continues to enforce admin authorization.
-- The admin profile drawer's existing delete callback targets the signed-in admin's own email. Thus, an admin can delete their own account through that action; this behavior follows the existing admin-only route but should be explicitly approved as a product policy.
+- At initial implementation, the admin profile drawer could submit the signed-in admin's email to the admin-only delete route. A later policy decision now prohibits administrators from deleting their own account. The backend rejects that target, the profile drawer no longer exposes self-deletion, and the admin dashboard disables deletion of the current admin.
 - The delete service uses `findOneAndDelete` for the user record. This change does not assess or alter retention/cascade behavior for associated records. Hard deletion remains a destructive, admin-authorized operation.
 - There is no live integration coverage for concurrent reset/session persistence or deletion against MongoDB. Deployment and database behavior remain unverified.
+
+## Approved account-deletion policy follow-up
+
+The product owner confirmed:
+
+- If verification email delivery fails during registration, delete the newly created unverified account. This pre-existing behavior is retained and now covered by a service test.
+- An administrator may not delete their own account. This rule is enforced on the server using the authenticated principal's database-loaded email, and also reflected in the admin UI. Administrators may still delete other accounts.
+
+Validation for this follow-up includes registration cleanup, self-delete denial, and continued admin deletion of another account.
+
+Files updated for this policy follow-up:
+
+- `backend/src/services/user.service.js` and `backend/src/controllers/user.controller.js` — carry the authenticated principal into deletion logic and reject an admin's own email.
+- `backend/src/services/user.service.test.js` and `backend/src/routes/user.route.test.js` — test registration cleanup and backend self-delete rejection while preserving deletion of another account.
+- `frontend/myfullstack/src/App.tsx` and `frontend/myfullstack/src/components/ProfileDrawer.tsx` — remove the profile self-delete action.
+- `frontend/myfullstack/src/components/AdminDashboard.tsx` — disable the current administrator's delete action while retaining other account deletion.
+- Corresponding frontend tests verify the disabled admin action and removed profile deletion control.
+
+Follow-up validation on `fix/prevent-admin-self-deletion`:
+
+- Backend `npm test`: passed, 41 tests, 0 failures.
+- Frontend `npm test`: passed, 23 tests, 0 failures.
+- Frontend `npm run lint`: passed.
+- Frontend `npm run build`: passed; TypeScript check succeeded. The existing `OrbitalScene` chunk-size warning remains.
+- Backend `npm run lint --if-present`: passed; no backend lint script is configured.
+- `git diff --check`: passed.
 
 ## Suggested commit message
 
@@ -68,4 +93,4 @@ No pre-change baseline was captured on this feature branch. No new failures were
 
 ## Recommended next step
 
-Review the admin self-deletion and account-retention policy before relying on account deletion in production. Review the change and its CI results before merging.
+Review the deletion contract and associated-record retention behavior before production use. The approved email-failure cleanup and admin self-delete policies are implemented and covered by tests; no production database workflow was exercised.

@@ -346,33 +346,6 @@ function AppShell() {
     }
   };
 
-  const handleDeleteProfile = async () => {
-    if (!user) {
-      resetAuthState();
-      return;
-    }
-
-    const confirmed = window.confirm(
-      "Are you sure you want to delete your profile?",
-    );
-    if (!confirmed) return;
-
-    try {
-      const data = await apiClient.del("/api/v1/users/delete", {
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email }),
-      });
-
-      if (!data.message) {
-        throw new Error("Unable to delete profile");
-      }
-
-      signOut(data.message);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Delete failed");
-    }
-  };
-
   const handleTouchStart = (event: TouchEvent<HTMLElement>) => {
     if (window.scrollY === 0) {
       const touchY = event.touches[0]?.clientY ?? 0;
@@ -485,7 +458,6 @@ function AppShell() {
                 onEventSubmit={handleEventSubmit}
                 onLogout={handleLogout}
                 onLogoutEverywhere={handleLogoutEverywhere}
-                onDeleteProfile={handleDeleteProfile}
               />
             ) : null}
             <AnimatePresence mode="wait" initial={false}>

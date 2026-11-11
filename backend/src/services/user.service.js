@@ -31,7 +31,10 @@ const validateRequiredFields = (fields, payload) => {
   return null;
 };
 
-const registerUser = async ({ username, email, password }) => {
+const registerUser = async (
+  { username, email, password },
+  sendVerification = sendVerificationEmail,
+) => {
   const inputValidation = validateRequiredFields({ username, email, password }, { username, email, password });
   if (inputValidation) return inputValidation;
 
@@ -55,7 +58,7 @@ const registerUser = async ({ username, email, password }) => {
   const verificationUrl = `${baseUrl}/api/v1/users/verify/${verificationToken}`;
 
   try {
-    await sendVerificationEmail({
+    await sendVerification({
       to: user.email,
       username: user.username,
       verificationUrl,
@@ -201,12 +204,20 @@ const updateUser = async (
   });
 };
 
-const deleteUser = async (email) => {
+const deleteUser = async (email, principal) => {
   if (!email) {
     return createError(400, "Email is required");
   }
 
-  const user = await deleteUserByEmail(normalizeEmail(email));
+  const normalizedEmail = normalizeEmail(email);
+  if (
+    principal?.role === "admin" &&
+    normalizedEmail === normalizeEmail(principal.email)
+  ) {
+    return createError(403, "Administrators cannot delete their own account");
+  }
+
+  const user = await deleteUserByEmail(normalizedEmail);
   if (!user) {
     return createError(400, "User does not exist");
   }

@@ -1,6 +1,6 @@
 import { type FormEvent, type Dispatch, type SetStateAction } from "react";
 import { motion } from "framer-motion";
-import { LogOut, Send, Trash2, X } from "lucide-react";
+import { LogOut, Send, X } from "lucide-react";
 import type { EventForm, PostForm, UserProfile } from "../types.ts";
 
 type ProfileDrawerProps = {
@@ -17,7 +17,6 @@ type ProfileDrawerProps = {
   onEventSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onLogout: () => void;
   onLogoutEverywhere: () => void;
-  onDeleteProfile: () => void;
 };
 
 export function ProfileDrawer({
@@ -34,7 +33,6 @@ export function ProfileDrawer({
   onEventSubmit,
   onLogout,
   onLogoutEverywhere,
-  onDeleteProfile,
 }: ProfileDrawerProps) {
   // This drawer holds profile information and the create-card that matches the current feed.
   const showProjectCard = activeFeed === "projects";
@@ -216,16 +214,6 @@ export function ProfileDrawer({
               <LogOut size={16} />
               Log out everywhere
             </button>
-            {user.role === "admin" ? (
-              <button
-                type="button"
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#EF476F]/20 bg-[#EF476F]/10 px-4 py-3 font-semibold text-[#EF476F]"
-                onClick={onDeleteProfile}
-              >
-                <Trash2 size={16} />
-                Delete profile
-              </button>
-            ) : null}
           </div>
         </div>
       </motion.aside>
