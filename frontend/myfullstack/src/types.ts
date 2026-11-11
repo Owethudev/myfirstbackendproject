@@ -44,3 +44,8 @@ export type EventItem = {
   author?: string;
   createdAt?: string;
 };
+
+export type FeedRequestState =
+  | { status: "loading" }
+  | { status: "ready" }
+  | { status: "error"; message: string };

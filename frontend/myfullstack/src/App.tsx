@@ -32,6 +32,7 @@ import {
   getSessionMessage,
   getStoredUser,
 } from "./services/sessionManager.ts";
+import { usePaginatedFeed } from "./hooks/usePaginatedFeed.ts";
 import { useAuth } from "./hooks/useAuth.ts";
 import { useSessionTimeout } from "./hooks/useSessionTimeout.ts";
 const AdminDashboard = lazy(() =>
@@ -67,14 +68,6 @@ const EMPTY_EVENT_FORM: EventForm = {
   time: "",
 };
 
-type PaginatedResponse<T> = {
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
-  hasNextPage: boolean;
-  items: T[];
-};
-
 function AppShell() {
   const [mode, setMode] = useState<AuthMode>("login");
   const [form, setForm] = useState<AuthForm>(EMPTY_AUTH_FORM);
@@ -82,8 +75,12 @@ function AppShell() {
   const [isGuest, setIsGuest] = useState(false);
   const [localMessage, setLocalMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [posts, setPosts] = useState<PostItem[]>([]);
-  const [events, setEvents] = useState<EventItem[]>([]);
+  const postFeed = usePaginatedFeed<PostItem>("/api/v1/posts/getPosts", 6);
+  const eventFeed = usePaginatedFeed<EventItem>("/api/v1/events/getEvents", 12);
+  const loadPostPage = postFeed.loadPage;
+  const loadEventPage = eventFeed.loadPage;
+  const { items: posts } = postFeed;
+  const { items: events } = eventFeed;
   const [postForm, setPostForm] = useState<PostForm>(EMPTY_POST_FORM);
   const [eventForm, setEventForm] = useState<EventForm>(EMPTY_EVENT_FORM);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -94,11 +91,6 @@ function AppShell() {
     "projects",
   );
   const [feedLayout, setFeedLayout] = useState<"current" | "grid">("current");
-  const [postPage, setPostPage] = useState(1);
-  const [eventPage, setEventPage] = useState(1);
-  const [hasMorePosts, setHasMorePosts] = useState(false);
-  const [hasMoreEvents, setHasMoreEvents] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchScope, setSearchScope] = useState<"projects" | "events">(
     "projects",
@@ -143,63 +135,9 @@ function AppShell() {
       .some((value) => String(value).toLowerCase().includes(normalizedSearch));
   });
 
-  const loadPosts = useCallback(async (page = 1, append = false) => {
-    try {
-      const response = await fetch(
-        buildApiUrl(`/api/v1/posts/getPosts?page=${page}&limit=6`),
-      );
-      const data =
-        await parseJsonResponse<PaginatedResponse<PostItem>>(response);
-
-      if (response.ok && Array.isArray(data.items)) {
-        setPosts((current) =>
-          append ? [...current, ...data.items] : data.items,
-        );
-        setPostPage(data.currentPage);
-        setHasMorePosts(data.hasNextPage);
-      } else {
-        setPosts([]);
-        setPostPage(1);
-        setHasMorePosts(false);
-      }
-    } catch (error) {
-      console.error("Failed to load posts", error);
-      setPosts([]);
-      setPostPage(1);
-      setHasMorePosts(false);
-    }
-  }, []);
-
-  const loadEvents = useCallback(async (page = 1, append = false) => {
-    try {
-      const response = await fetch(
-        buildApiUrl(`/api/v1/events/getEvents?page=${page}&limit=12`),
-      );
-      const data =
-        await parseJsonResponse<PaginatedResponse<EventItem>>(response);
-
-      if (response.ok && Array.isArray(data.items)) {
-        setEvents((current) =>
-          append ? [...current, ...data.items] : data.items,
-        );
-        setEventPage(data.currentPage);
-        setHasMoreEvents(data.hasNextPage);
-      } else {
-        setEvents([]);
-        setEventPage(1);
-        setHasMoreEvents(false);
-      }
-    } catch (error) {
-      console.error("Failed to load events", error);
-      setEvents([]);
-      setEventPage(1);
-      setHasMoreEvents(false);
-    }
-  }, []);
-
   const refreshCommunityData = useCallback(async () => {
-    await Promise.all([loadPosts(1), loadEvents(1)]);
-  }, [loadEvents, loadPosts]);
+    await Promise.all([loadPostPage(1), loadEventPage(1)]);
+  }, [loadEventPage, loadPostPage]);
 
   useEffect(() => {
     const runRefresh = async () => {
@@ -291,7 +229,7 @@ function AppShell() {
       });
 
       setPostForm(EMPTY_POST_FORM);
-      await loadPosts();
+      await postFeed.loadPage();
       setLocalMessage(data.message || "Post created successfully");
       setMessage(data.message || "Post created successfully");
     } catch (error) {
@@ -316,7 +254,7 @@ function AppShell() {
       });
 
       setEventForm(EMPTY_EVENT_FORM);
-      await loadEvents();
+      await eventFeed.loadPage();
       setLocalMessage(data.message || "Event created successfully");
       setMessage(data.message || "Event created successfully");
     } catch (error) {
@@ -379,7 +317,7 @@ function AppShell() {
         },
       );
       // This removes the deleted post right away from the screen.
-      setPosts((current) => current.filter((post) => post._id !== postId));
+      postFeed.removeItem(postId);
       setMessage(data.message || "Post deleted");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Delete failed");
@@ -401,7 +339,7 @@ function AppShell() {
           body: JSON.stringify({ username: user.username }),
         },
       );
-      setEvents((current) => current.filter((event) => event._id !== eventId));
+      eventFeed.removeItem(eventId);
       setMessage(data.message || "Event deleted");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Delete failed");
@@ -569,21 +507,25 @@ function AppShell() {
                   posts={filteredPosts}
                   user={user}
                   viewMode={feedLayout}
+                  requestState={postFeed.requestState}
+                  onRetry={() => void postFeed.loadPage()}
                   onViewModeChange={setFeedLayout}
                   onDeletePost={handleDeletePost}
                 />
-                {hasMorePosts ? (
+                {postFeed.hasNextPage ? (
                   <div className="load-more-wrap">
                     <button
                       type="button"
-                      onClick={async () => {
-                        setLoadingMore(true);
-                        await loadPosts(postPage + 1, true);
-                        setLoadingMore(false);
-                      }}
+                      disabled={
+                        postFeed.loadingMore ||
+                        postFeed.requestState.status !== "ready"
+                      }
+                      onClick={() =>
+                        void postFeed.loadPage(postFeed.currentPage + 1, true)
+                      }
                       className="load-more-button"
                     >
-                      {loadingMore ? "Loading..." : "Load more"}
+                      {postFeed.loadingMore ? "Loading..." : "Load more"}
                     </button>
                   </div>
                 ) : null}
@@ -601,21 +543,25 @@ function AppShell() {
                   events={filteredEvents}
                   user={user}
                   viewMode={feedLayout}
+                  requestState={eventFeed.requestState}
+                  onRetry={() => void eventFeed.loadPage()}
                   onViewModeChange={setFeedLayout}
                   onDeleteEvent={handleDeleteEvent}
                 />
-                {hasMoreEvents ? (
+                {eventFeed.hasNextPage ? (
                   <div className="load-more-wrap">
                     <button
                       type="button"
-                      onClick={async () => {
-                        setLoadingMore(true);
-                        await loadEvents(eventPage + 1, true);
-                        setLoadingMore(false);
-                      }}
+                      disabled={
+                        eventFeed.loadingMore ||
+                        eventFeed.requestState.status !== "ready"
+                      }
+                      onClick={() =>
+                        void eventFeed.loadPage(eventFeed.currentPage + 1, true)
+                      }
                       className="load-more-button"
                     >
-                      {loadingMore ? "Loading..." : "Load more"}
+                      {eventFeed.loadingMore ? "Loading..." : "Load more"}
                     </button>
                   </div>
                 ) : null}

@@ -1,12 +1,14 @@
 import { motion } from "framer-motion";
 import { Trash2 } from "lucide-react";
 import { getCoverStyle } from "../utils.ts";
-import type { PostItem, UserProfile } from "../types.ts";
+import type { FeedRequestState, PostItem, UserProfile } from "../types.ts";
 
 type FeedProps = {
   posts: PostItem[];
   user: UserProfile | null;
   viewMode: "current" | "grid";
+  requestState: FeedRequestState;
+  onRetry: () => void;
   onViewModeChange: (view: "current" | "grid") => void;
   onDeletePost: (postId: string) => void;
 };
@@ -15,6 +17,8 @@ export function Feed({
   posts,
   user,
   viewMode,
+  requestState,
+  onRetry,
   onViewModeChange,
   onDeletePost,
 }: FeedProps) {
@@ -59,11 +63,24 @@ export function Feed({
         </div>
       </div>
 
-      {posts.length === 0 ? (
+      {requestState.status === "error" ? (
+        <div className="feed-empty-state" role="alert">
+          <p>{requestState.message}</p>
+          <button type="button" onClick={onRetry}>
+            Retry loading posts
+          </button>
+        </div>
+      ) : null}
+
+      {requestState.status === "loading" && posts.length === 0 ? (
+        <div className="feed-empty-state" role="status">
+          Loading posts...
+        </div>
+      ) : requestState.status === "ready" && posts.length === 0 ? (
         <div className="feed-empty-state">
           No posts yet. Be the first to share a project and spark the feed.
         </div>
-      ) : (
+      ) : posts.length > 0 ? (
         <div
           className={
             isGridView ? "grid gap-4 grid-cols-2 md:grid-cols-3" : "space-y-4"
@@ -144,7 +161,7 @@ export function Feed({
             </motion.article>
           ))}
         </div>
-      )}
+      ) : null}
     </motion.section>
   );
 }

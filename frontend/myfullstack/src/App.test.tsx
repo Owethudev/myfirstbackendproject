@@ -112,6 +112,8 @@ describe("guest feed access", () => {
         ]}
         user={null}
         viewMode="current"
+        requestState={{ status: "ready" }}
+        onRetry={() => {}}
         onViewModeChange={() => {}}
         onDeletePost={() => {}}
       />,
@@ -136,6 +138,8 @@ describe("guest feed access", () => {
         ]}
         user={null}
         viewMode="current"
+        requestState={{ status: "ready" }}
+        onRetry={() => {}}
         onViewModeChange={() => {}}
         onDeleteEvent={() => {}}
       />,
@@ -159,6 +163,8 @@ describe("guest feed access", () => {
         ]}
         user={null}
         viewMode="grid"
+        requestState={{ status: "ready" }}
+        onRetry={() => {}}
         onViewModeChange={() => {}}
         onDeletePost={() => {}}
       />,
