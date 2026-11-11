@@ -10,7 +10,7 @@ const router = Router();
 router.route("/register").post(signupLimiter, registerUser);
 router.route("/verify/:token").get(verifyUser);
 router.route("/login").post(loginLimiter, loginUser);
-router.route("/logout").post(logoutUser);
+router.route("/logout").post(authorize("user", "admin"), logoutUser);
 router.route("/stats").get(authorize("admin"), getAdminStats);
 router.route("/list").get(authorize("admin"), listUsers);
 router.route("/status/:id").patch(authorize("admin"), updateUserStatus);

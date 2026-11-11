@@ -52,9 +52,9 @@ const loginUser = async (req, res) => {
 const logoutUser = async (req, res) => {
     try {
         const result = await logoutUserService(
-            req.body.email,
-            req.body.sessionId || req.body.session_id || req.headers["x-session-id"],
-            Boolean(req.body.logoutAll || req.body.logout_all),
+            req.user.id,
+            req.session?.sessionId,
+            Boolean(req.body?.logoutAll || req.body?.logout_all),
         );
         return res.status(result.statusCode).json(result.payload);
     } catch (error) {
@@ -65,7 +65,7 @@ const logoutUser = async (req, res) => {
 // This updates a user's profile information.
 const updateUser = async (req, res) => {
     try {
-        const result = await updateUserService(req.body);
+        const result = await updateUserService(req.user, req.body);
         return res.status(result.statusCode).json(result.payload);
     } catch (error) {
         return handleControllerError(res, error, "Unable to update profile");

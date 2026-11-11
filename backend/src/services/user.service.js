@@ -131,31 +131,50 @@ const loginUser = async ({ email, password }) => {
   });
 };
 
-const logoutUser = async (email, sessionId, logoutAll = false) => {
-  if (!email) {
-    return createError(400, "Email is required");
+const logoutUser = async (userId, sessionId, logoutAll = false) => {
+  if (!userId || !sessionId) {
+    return createError(401, "Session expired.");
   }
 
-  const user = await findUserByEmail(normalizeEmail(email));
-  if (!user) {
-    return createError(400, "User does not exist");
-  }
-
-  if (logoutAll || !sessionId) {
-    await revokeAllUserSessions(user._id);
+  if (logoutAll) {
+    await revokeAllUserSessions(userId);
   } else {
-    await revokeSession(sessionId);
+    await revokeSession(sessionId, userId);
   }
 
   return createResult(200, { message: "User logged out successfully" });
 };
 
-const updateUser = async ({ id, username, email, password }) => {
-  if (!id) {
-    return createError(400, "User id is required");
+const resolveProfileUpdateTargetId = (principal, requestedId) => {
+  if (!principal?.id || !["user", "admin"].includes(principal.role)) {
+    return null;
   }
 
-  const user = await findUserById(id);
+  if (principal.role === "admin") {
+    return requestedId || principal.id;
+  }
+
+  if (requestedId && String(requestedId) !== String(principal.id)) {
+    return null;
+  }
+
+  return principal.id;
+};
+
+const updateUser = async (
+  principal,
+  { id: requestedId, username, email, password } = {},
+) => {
+  const targetId = resolveProfileUpdateTargetId(principal, requestedId);
+  if (!targetId) {
+    if (!principal?.id || !["user", "admin"].includes(principal.role)) {
+      return createError(401, "Session expired.");
+    }
+
+    return createError(403, "You are not authorized to update this profile");
+  }
+
+  const user = await findUserById(targetId);
   if (!user) {
     return createError(404, "User not found");
   }
@@ -294,6 +313,7 @@ export {
   loginUser,
   logoutUser,
   updateUser,
+  resolveProfileUpdateTargetId,
   deleteUser,
   listUsers,
   updateUserStatus,

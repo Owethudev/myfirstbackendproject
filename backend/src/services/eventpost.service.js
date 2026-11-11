@@ -5,6 +5,7 @@ import {
   findEventPostById,
   findEventPosts,
 } from "../repositories/eventpost.repository.js";
+import { canManageContent, getContentAuthor } from "./contentOwnership.js";
 
 const parsePagination = (query = {}) => {
   const page = query.page ?? "1";
@@ -16,9 +17,14 @@ const parsePagination = (query = {}) => {
   return { parsedPage, parsedLimit, skip };
 };
 
-const createEventPost = async ({ name, location, theme, time, author }) => {
+const createEventPost = async (principal, { name, location, theme, time }) => {
   if (!name || !location || !theme || !time) {
     return createError(400, "Please provide name, location, theme and time");
+  }
+
+  const author = getContentAuthor(principal);
+  if (!author) {
+    return createError(401, "Session expired.");
   }
 
   const event = await createEventPostRepository({
@@ -26,7 +32,7 @@ const createEventPost = async ({ name, location, theme, time, author }) => {
     location,
     theme,
     time,
-    author: author ?? "Unknown",
+    author,
   });
 
   return createResult(201, {
@@ -49,14 +55,13 @@ const getEventPosts = async (query = {}) => {
   });
 };
 
-const deleteEventPost = async (id, payload = {}) => {
+const deleteEventPost = async (id, principal) => {
   const event = await findEventPostById(id);
   if (!event) {
     return createError(404, "Event not found");
   }
 
-  const { username } = payload;
-  if (!username || event.author !== username) {
+  if (!canManageContent(principal, event.author)) {
     return createError(403, "You are not authorized to delete this event");
   }
 

@@ -18,7 +18,7 @@ const sessionMiddleware = async (req, res, next) => {
 
   try {
     const decoded = verifyAccessToken(token);
-    const activeSession = await getActiveSession(decoded.jti);
+    const activeSession = await getActiveSession(decoded.jti, decoded.id);
 
     if (!activeSession) {
       return res.status(401).json({ success: false, message: "Session expired." });

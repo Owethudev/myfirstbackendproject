@@ -9,7 +9,13 @@ const findUserById = async (id) => User.findById(id);
 
 const findUserByVerificationToken = async (token) => User.findOne({ verificationToken: token });
 
-const findUserByResetToken = async (token) => User.findOne({ resetPasswordToken: token });
+const buildActiveResetTokenQuery = (token, now = new Date()) => ({
+  resetPasswordToken: token,
+  resetPasswordExpires: { $gt: now },
+});
+
+const findUserByResetToken = async (token, now = new Date()) =>
+  User.findOne(buildActiveResetTokenQuery(token, now));
 
 const findUsers = async ({ query = {}, skip = 0, limit = 20, sort = { createdAt: -1 } }) => {
   const [items, totalItems] = await Promise.all([
@@ -33,6 +39,7 @@ export {
   findUserByEmail,
   findUserById,
   findUserByVerificationToken,
+  buildActiveResetTokenQuery,
   findUserByResetToken,
   findUsers,
   countUsers,
@@ -46,6 +53,7 @@ export default {
   findUserByEmail,
   findUserById,
   findUserByVerificationToken,
+  buildActiveResetTokenQuery,
   findUserByResetToken,
   findUsers,
   countUsers,

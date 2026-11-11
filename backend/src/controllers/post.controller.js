@@ -11,7 +11,7 @@ import {
 
 const createPost = async (req, res) => {
     try {
-        const result = await createPostService(req.body);
+        const result = await createPostService(req.user, req.body);
         return res.status(result.statusCode).json(result.payload);
     } catch (error) {
         return handleControllerError(res, error, "Internal server error");
@@ -47,7 +47,7 @@ const reviewPost = async (req, res) => {
 
 const updatePost = async (req, res) => {
     try {
-        const result = await updatePostService(req.params.id, req.body);
+        const result = await updatePostService(req.params.id, req.user, req.body);
         return res.status(result.statusCode).json(result.payload);
     } catch (error) {
         return handleControllerError(res, error, "Internal server error");
@@ -56,7 +56,7 @@ const updatePost = async (req, res) => {
 
 const deletePost = async (req, res) => {
     try {
-        const result = await deletePostService(req.params.id, req.body);
+        const result = await deletePostService(req.params.id, req.user);
         return res.status(result.statusCode).json(result.payload);
     } catch (error) {
         return handleControllerError(res, error, "Internal server error");

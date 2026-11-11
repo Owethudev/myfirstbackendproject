@@ -7,6 +7,11 @@ import {
   findPosts,
   savePost,
 } from "../repositories/post.repository.js";
+import {
+  canManageContent,
+  getContentAuthor,
+  pickPostContentUpdates,
+} from "./contentOwnership.js";
 
 const parsePagination = (query) => {
   const page = query?.page ?? "1";
@@ -18,16 +23,21 @@ const parsePagination = (query) => {
   return { parsedPage, parsedLimit, skip };
 };
 
-const createPost = async ({ name, description, portfolio, author }) => {
+const createPost = async (principal, { name, description, portfolio }) => {
   if (!name || !description || !portfolio) {
     return createError(400, "Please provide name, description and portfolio");
+  }
+
+  const author = getContentAuthor(principal);
+  if (!author) {
+    return createError(401, "Session expired.");
   }
 
   const post = await createPostRepository({
     name,
     description,
     portfolio,
-    author: author ?? "Unknown",
+    author,
   });
 
   return createResult(201, {
@@ -100,12 +110,22 @@ const reviewPost = async (id, payload = {}) => {
   });
 };
 
-const updatePost = async (id, payload = {}) => {
-  if (Object.keys(payload).length === 0) {
+const updatePost = async (id, principal, payload = {}) => {
+  const updates = pickPostContentUpdates(payload);
+  if (Object.keys(updates).length === 0) {
     return createError(400, "Please provide data to update");
   }
 
-  const post = await findPostByIdAndUpdate(id, payload, { new: true });
+  const existingPost = await findPostById(id);
+  if (!existingPost) {
+    return createError(404, "Post not found");
+  }
+
+  if (!canManageContent(principal, existingPost.author)) {
+    return createError(403, "You are not authorized to update this post");
+  }
+
+  const post = await findPostByIdAndUpdate(id, updates, { new: true });
   if (!post) {
     return createError(404, "Post not found");
   }
@@ -116,14 +136,13 @@ const updatePost = async (id, payload = {}) => {
   });
 };
 
-const deletePost = async (id, payload = {}) => {
+const deletePost = async (id, principal) => {
   const post = await findPostById(id);
   if (!post) {
     return createError(404, "Post not found");
   }
 
-  const { username } = payload;
-  if (!username || post.author !== username) {
+  if (!canManageContent(principal, post.author)) {
     return createError(403, "You are not authorized to delete this post");
   }
 

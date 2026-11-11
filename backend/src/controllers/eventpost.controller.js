@@ -7,7 +7,7 @@ import {
 
 const createEventPost = async (req, res) => {
     try {
-        const result = await createEventPostService(req.body);
+        const result = await createEventPostService(req.user, req.body);
         return res.status(result.statusCode).json(result.payload);
     } catch (error) {
         return handleControllerError(res, error, "Internal server error");
@@ -25,7 +25,7 @@ const getEventPosts = async (req, res) => {
 
 const deleteEventPost = async (req, res) => {
     try {
-        const result = await deleteEventPostService(req.params.id, req.body);
+        const result = await deleteEventPostService(req.params.id, req.user);
         return res.status(result.statusCode).json(result.payload);
     } catch (error) {
         return handleControllerError(res, error, "Internal server error");

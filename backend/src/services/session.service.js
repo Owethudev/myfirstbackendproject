@@ -22,28 +22,64 @@ const createSession = async ({ userId, userAgent = "", ipAddress = "" }) => {
   });
 };
 
-const revokeSession = async (sessionId) => {
-  if (!sessionId) return null;
+const buildSessionRevocationFilter = (userId, sessionId) => {
+  if (!userId) return null;
 
-  return updateSession({ sessionId }, { active: false, revokedAt: new Date() });
+  return sessionId
+    ? { sessionId, userId, active: true }
+    : { userId, active: true };
+};
+
+const revokeSession = async (sessionId, userId) => {
+  if (!sessionId || !userId) return null;
+
+  return updateSession(
+    buildSessionRevocationFilter(userId, sessionId),
+    { active: false, revokedAt: new Date() },
+  );
 };
 
 const revokeAllUserSessions = async (userId) => {
   if (!userId) return 0;
 
-  const result = await updateManySessions({ userId, active: true }, { active: false, revokedAt: new Date() });
+  const result = await updateManySessions(
+    buildSessionRevocationFilter(userId),
+    { active: false, revokedAt: new Date() },
+  );
 
   return result.modifiedCount || 0;
 };
 
-const getActiveSession = async (sessionId) => {
-  if (!sessionId) return null;
+const isUsableSession = (session, userId, now = new Date()) => {
+  if (!session || !userId || session.active !== true || !session.userId) {
+    return false;
+  }
 
-  return findSessionById(sessionId);
+  const expiresAt = new Date(session.expiresAt).getTime();
+  return (
+    String(session.userId) === String(userId) &&
+    Number.isFinite(expiresAt) &&
+    expiresAt > now.getTime()
+  );
+};
+
+const getActiveSession = async (sessionId, userId) => {
+  if (!sessionId || !userId) return null;
+
+  const session = await findSessionById(sessionId);
+  return isUsableSession(session, userId) ? session : null;
 };
 
 const cleanupExpiredSessions = async () => {
   await deleteExpiredSessions(new Date());
 };
 
-export { createSession, getActiveSession, revokeAllUserSessions, revokeSession, cleanupExpiredSessions };
+export {
+  createSession,
+  buildSessionRevocationFilter,
+  getActiveSession,
+  isUsableSession,
+  revokeAllUserSessions,
+  revokeSession,
+  cleanupExpiredSessions,
+};
