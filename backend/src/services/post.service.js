@@ -12,6 +12,7 @@ import {
   getContentAuthor,
   pickPostContentUpdates,
 } from "./contentOwnership.js";
+import { buildPostReviewUpdates } from "./postModeration.js";
 
 const parsePagination = (query) => {
   const page = query?.page ?? "1";
@@ -90,18 +91,12 @@ const reviewPost = async (id, payload = {}) => {
     return createError(404, "Post not found");
   }
 
-  if (typeof payload.reported === "boolean") {
-    post.reported = payload.reported;
+  const review = buildPostReviewUpdates(payload);
+  if (review.error) {
+    return createError(400, review.error);
   }
 
-  if (payload.reportReason !== undefined) {
-    post.reportReason = payload.reportReason;
-  }
-
-  if (payload.moderationStatus) {
-    post.moderationStatus = payload.moderationStatus;
-  }
-
+  Object.assign(post, review.updates);
   await savePost(post);
 
   return createResult(200, {

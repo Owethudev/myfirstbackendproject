@@ -1,5 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 
+export const POST_MODERATION_STATUSES = ["pending", "approved", "removed"];
+
 // This shape tells the database what one post must look like.
 const postSchema = new Schema(
     {
@@ -33,7 +35,7 @@ const postSchema = new Schema(
         },
         moderationStatus: {
             type: String,
-            enum: ["pending", "approved", "removed"],
+            enum: POST_MODERATION_STATUSES,
             default: "approved",
         },
     },
