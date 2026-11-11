@@ -1,12 +1,14 @@
 import { motion } from "framer-motion";
 import { Trash2 } from "lucide-react";
 import { getCoverStyle } from "../utils.ts";
-import type { EventItem, UserProfile } from "../types.ts";
+import type { EventItem, FeedRequestState, UserProfile } from "../types.ts";
 
 type EventFeedProps = {
   events: EventItem[];
   user: UserProfile | null;
   viewMode: "current" | "grid";
+  requestState: FeedRequestState;
+  onRetry: () => void;
   onViewModeChange: (view: "current" | "grid") => void;
   onDeleteEvent: (eventId: string) => void;
 };
@@ -15,6 +17,8 @@ export function EventFeed({
   events,
   user,
   viewMode,
+  requestState,
+  onRetry,
   onViewModeChange,
   onDeleteEvent,
 }: EventFeedProps) {
@@ -59,11 +63,24 @@ export function EventFeed({
         </div>
       </div>
 
-      {events.length === 0 ? (
+      {requestState.status === "error" ? (
+        <div className="feed-empty-state" role="alert">
+          <p>{requestState.message}</p>
+          <button type="button" onClick={onRetry}>
+            Retry loading events
+          </button>
+        </div>
+      ) : null}
+
+      {requestState.status === "loading" && events.length === 0 ? (
+        <div className="feed-empty-state" role="status">
+          Loading events...
+        </div>
+      ) : requestState.status === "ready" && events.length === 0 ? (
         <div className="feed-empty-state">
           No events yet. Be the first to share one with the community.
         </div>
-      ) : (
+      ) : events.length > 0 ? (
         <div
           className={
             isGridView ? "grid gap-4 grid-cols-2 md:grid-cols-3" : "space-y-4"
@@ -116,7 +133,7 @@ export function EventFeed({
             </motion.article>
           ))}
         </div>
-      )}
+      ) : null}
     </motion.section>
   );
 }
