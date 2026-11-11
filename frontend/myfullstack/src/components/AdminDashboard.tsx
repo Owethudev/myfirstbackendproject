@@ -98,11 +98,15 @@ export function AdminDashboard() {
       return () => window.clearTimeout(timer);
     }
 
+    let isCurrent = true;
+
     const loadStats = async () => {
       try {
         const data = await authService.fetchJson("/api/v1/users/stats");
+        if (!isCurrent) return;
         setStats(data as AdminStats);
       } catch (err) {
+        if (!isCurrent) return;
         setError(
           err instanceof Error
             ? err.message
@@ -117,11 +121,13 @@ export function AdminDashboard() {
           `/api/v1/users/list?page=1&limit=20&search=${encodeURIComponent(search)}`,
         );
 
+        if (!isCurrent) return;
         const responseItems = (data as { items?: unknown[] }).items ?? [];
         setUsers(
           Array.isArray(responseItems) ? (responseItems as AdminUser[]) : [],
         );
       } catch (err) {
+        if (!isCurrent) return;
         setError(err instanceof Error ? err.message : "Unable to load users");
       }
     };
@@ -132,6 +138,7 @@ export function AdminDashboard() {
           "/api/v1/posts/reported?page=1&limit=20",
         );
 
+        if (!isCurrent) return;
         const responseItems = (data as { items?: unknown[] }).items ?? [];
         setReportedPosts(
           Array.isArray(responseItems)
@@ -139,17 +146,22 @@ export function AdminDashboard() {
             : [],
         );
       } catch (err) {
+        if (!isCurrent) return;
         setError(
           err instanceof Error ? err.message : "Unable to load reported posts",
         );
       } finally {
-        setLoading(false);
+        if (isCurrent) setLoading(false);
       }
     };
 
     void loadStats();
     void loadUsers();
     void loadReportedPosts();
+
+    return () => {
+      isCurrent = false;
+    };
   }, [navigate, search]);
 
   const handleToggleSuspend = async (userId: string, suspended: boolean) => {
