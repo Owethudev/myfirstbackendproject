@@ -28,7 +28,10 @@ type DashboardOptions = {
   loadStats?: () => Promise<unknown>;
   loadReportedPosts?: () => Promise<unknown>;
   loadAuditLogs?: () => Promise<unknown>;
-  mutations?: Map<string, () => Promise<unknown>>;
+  mutations?: Map<
+    string,
+    (options?: RequestInit) => Promise<unknown>
+  >;
 };
 
 const createDeferred = <T,>() => {
@@ -61,7 +64,7 @@ const mountDashboard = async (
   );
   localStorage.setItem("snpl_token", "test-token");
 
-  fetchJsonMock.mockImplementation((path: string) => {
+  fetchJsonMock.mockImplementation((path: string, requestOptions?: RequestInit) => {
     if (path === "/api/v1/users/stats") {
       return (
         options.loadStats?.() ??
@@ -97,7 +100,7 @@ const mountDashboard = async (
 
     const mutation = options.mutations?.get(path);
     if (mutation) {
-      return mutation();
+      return mutation(requestOptions);
     }
 
     throw new Error(`Unexpected request: ${path}`);
@@ -295,6 +298,32 @@ describe("AdminDashboard user search", () => {
     fireEvent.click(screen.getByRole("button", { name: "Suspend" }));
     expect(await screen.findByText("Suspended")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reactivate" })).toBeInTheDocument();
+  });
+
+  it("deletes an admin-selected user using the email contract", async () => {
+    const userRequest = createDeferred<UserListResponse>();
+    const requests = new Map([["", userRequest]]);
+    const deletePath = "/api/v1/users/delete";
+    let deleteBody: unknown;
+    const deleteUser = vi.fn(async (requestOptions?: RequestInit) => {
+      deleteBody = JSON.parse(String(requestOptions?.body));
+      return { message: "User deleted successfully" };
+    });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    await mountDashboard(requests, {
+      mutations: new Map([[deletePath, deleteUser]]),
+    });
+    await act(async () => {
+      userRequest.resolve({ items: [makeUser("user-1", "member")] });
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Delete" }));
+
+    await waitFor(() => {
+      expect(deleteUser).toHaveBeenCalledOnce();
+      expect(deleteBody).toEqual({ email: "member@example.test" });
+      expect(screen.queryByText("member")).toBeNull();
+    });
   });
 
   it("distinguishes audit-log request errors from a successful empty result", async () => {

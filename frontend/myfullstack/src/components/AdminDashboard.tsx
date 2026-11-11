@@ -412,6 +412,12 @@ export function AdminDashboard() {
     const confirmed = window.confirm("Delete this user?");
     if (!confirmed) return;
 
+    const userToDelete = users.find((user) => user._id === userId);
+    if (!userToDelete) {
+      setActionError("Unable to delete user: user is no longer in the list");
+      return;
+    }
+
     setActionError("");
     try {
       const data: unknown = await authService.fetchJson("/api/v1/users/delete", {
@@ -419,7 +425,7 @@ export function AdminDashboard() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ id: userId }),
+        body: JSON.stringify({ email: userToDelete.email }),
       });
       if (!isMessageResponse(data)) {
         throw new Error("Unable to delete user: invalid response");

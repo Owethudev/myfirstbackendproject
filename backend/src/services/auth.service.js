@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { sendPasswordResetEmail } from "../config/email.js";
 import { createError, createResult } from "../utils/controllerResponse.js";
 import { findUserByEmail, findUserByResetToken, saveUser } from "../repositories/user.repository.js";
+import { revokeAllUserSessions } from "./session.service.js";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -59,6 +60,7 @@ const resetPassword = async ({ token, password }) => {
     return createError(400, "Invalid or expired reset token.");
   }
 
+  await revokeAllUserSessions(user._id);
   user.password = password;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpires = undefined;

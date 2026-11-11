@@ -216,14 +216,16 @@ export function ProfileDrawer({
               <LogOut size={16} />
               Log out everywhere
             </button>
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#EF476F]/20 bg-[#EF476F]/10 px-4 py-3 font-semibold text-[#EF476F]"
-              onClick={onDeleteProfile}
-            >
-              <Trash2 size={16} />
-              Delete profile
-            </button>
+            {user.role === "admin" ? (
+              <button
+                type="button"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#EF476F]/20 bg-[#EF476F]/10 px-4 py-3 font-semibold text-[#EF476F]"
+                onClick={onDeleteProfile}
+              >
+                <Trash2 size={16} />
+                Delete profile
+              </button>
+            ) : null}
           </div>
         </div>
       </motion.aside>

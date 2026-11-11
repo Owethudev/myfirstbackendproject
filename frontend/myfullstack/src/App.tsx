@@ -358,23 +358,18 @@ function AppShell() {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(buildApiUrl("/api/v1/users/delete"), {
-        method: "DELETE",
+      const data = await apiClient.del("/api/v1/users/delete", {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: user.email }),
       });
 
-      const data = await parseJsonResponse<{ message?: string }>(response);
-      if (!response.ok) {
-        console.warn(
-          "Profile deletion request failed, forcing local sign-out",
-          data,
-        );
+      if (!data.message) {
+        throw new Error("Unable to delete profile");
       }
 
-      resetAuthState(data.message || "Profile deleted.");
+      signOut(data.message);
     } catch (error) {
-      resetAuthState(error instanceof Error ? error.message : "Delete failed");
+      setMessage(error instanceof Error ? error.message : "Delete failed");
     }
   };
 
