@@ -24,6 +24,13 @@ type UserListResponse = {
   }>;
 };
 
+type DashboardOptions = {
+  loadStats?: () => Promise<unknown>;
+  loadReportedPosts?: () => Promise<unknown>;
+  loadAuditLogs?: () => Promise<unknown>;
+  mutations?: Map<string, () => Promise<unknown>>;
+};
+
 const createDeferred = <T,>() => {
   let resolve!: (value: T) => void;
   let reject!: (reason: Error) => void;
@@ -44,7 +51,10 @@ const makeUser = (id: string, username: string) => ({
   suspended: false,
 });
 
-const mountDashboard = async (requests: Map<string, ReturnType<typeof createDeferred<UserListResponse>>>) => {
+const mountDashboard = async (
+  requests: Map<string, ReturnType<typeof createDeferred<UserListResponse>>>,
+  options: DashboardOptions = {},
+) => {
   localStorage.setItem(
     "snpl_user",
     JSON.stringify({ id: "admin-1", username: "admin", role: "admin" }),
@@ -53,13 +63,16 @@ const mountDashboard = async (requests: Map<string, ReturnType<typeof createDefe
 
   fetchJsonMock.mockImplementation((path: string) => {
     if (path === "/api/v1/users/stats") {
-      return Promise.resolve({
-        totalUsers: 0,
-        verifiedUsers: 0,
-        unverifiedUsers: 0,
-        totalPosts: 0,
-        totalComments: 0,
-      });
+      return (
+        options.loadStats?.() ??
+        Promise.resolve({
+          totalUsers: 0,
+          verifiedUsers: 0,
+          unverifiedUsers: 0,
+          totalPosts: 0,
+          totalComments: 0,
+        })
+      );
     }
 
     if (path.startsWith("/api/v1/users/list")) {
@@ -72,7 +85,19 @@ const mountDashboard = async (requests: Map<string, ReturnType<typeof createDefe
     }
 
     if (path === "/api/v1/posts/reported?page=1&limit=20") {
-      return Promise.resolve({ items: [] });
+      return options.loadReportedPosts?.() ?? Promise.resolve({ items: [] });
+    }
+
+    if (path === "/api/v1/audit?limit=100") {
+      return (
+        options.loadAuditLogs?.() ??
+        Promise.resolve({ success: true, data: [] })
+      );
+    }
+
+    const mutation = options.mutations?.get(path);
+    if (mutation) {
+      return mutation();
     }
 
     throw new Error(`Unexpected request: ${path}`);
@@ -100,6 +125,7 @@ describe("AdminDashboard user search", () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("keeps the newest user results when an earlier search resolves later", async () => {
@@ -155,5 +181,157 @@ describe("AdminDashboard user search", () => {
 
     expect(screen.getByText("latest-user")).toBeInTheDocument();
     expect(screen.queryByText("Obsolete search failed")).not.toBeInTheDocument();
+  });
+
+  it("keeps statistics, users, and reports independent and retries failed resources", async () => {
+    const userRequests = new Map([
+      ["", createDeferred<UserListResponse>()],
+    ]);
+    const loadStats = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("Statistics unavailable"))
+      .mockResolvedValueOnce({
+        totalUsers: 42,
+        verifiedUsers: 30,
+        unverifiedUsers: 12,
+        totalPosts: 8,
+        totalComments: 0,
+      });
+    const loadReportedPosts = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("Reports unavailable"))
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ items: [] });
+    await mountDashboard(userRequests, {
+      loadStats,
+      loadReportedPosts,
+    });
+
+    userRequests.get("")?.reject(new Error("Users unavailable"));
+    expect(await screen.findByText("Users unavailable")).toBeInTheDocument();
+    userRequests.set("", createDeferred<UserListResponse>());
+    fireEvent.click(screen.getByRole("button", { name: "Retry loading users" }));
+    await waitFor(() => {
+      expect(
+        fetchJsonMock.mock.calls.filter(
+          ([path]) => path === "/api/v1/users/list?page=1&limit=20&search=",
+        ),
+      ).toHaveLength(2);
+    });
+    await act(async () => {
+      userRequests
+        .get("")
+        ?.resolve({ items: [makeUser("user-1", "available-user")] });
+    });
+    expect(await screen.findByText("available-user")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Overview" }));
+    expect(await screen.findByText("Statistics unavailable")).toBeInTheDocument();
+    expect(screen.queryByText("Total users")).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Retry loading statistics" }),
+    );
+    expect(await screen.findByText("42")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reports" }));
+    expect(await screen.findByText("Reports unavailable")).toBeInTheDocument();
+    expect(
+      screen.queryByText("No reported content at the moment."),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Retry loading reported content" }),
+    );
+    expect(
+      await screen.findByText("Unable to load reported posts: invalid response"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("No reported content at the moment."),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Retry loading reported content" }),
+    );
+    expect(
+      await screen.findByText("No reported content at the moment."),
+    ).toBeInTheDocument();
+  });
+
+  it("does not present a failed admin mutation as successful", async () => {
+    const userRequest = createDeferred<UserListResponse>();
+    const requests = new Map([["", userRequest]]);
+    const statusPath = "/api/v1/users/status/user-1";
+    const updateStatus = vi
+      .fn()
+      .mockResolvedValueOnce({
+        user: {
+          id: "user-1",
+          role: "user",
+          suspended: false,
+          verified: true,
+        },
+      })
+      .mockResolvedValueOnce({
+        message: "User suspended successfully",
+        user: {
+          id: "user-1",
+          role: "user",
+          suspended: true,
+          verified: true,
+        },
+      });
+    const mutationResponses = new Map([[statusPath, updateStatus]]);
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    await mountDashboard(requests, { mutations: mutationResponses });
+    await act(async () => {
+      userRequest.resolve({ items: [makeUser("user-1", "member")] });
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Suspend" }));
+    expect(
+      await screen.findByText("Unable to update user status: invalid response"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Active")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Suspend" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Suspend" }));
+    expect(await screen.findByText("Suspended")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reactivate" })).toBeInTheDocument();
+  });
+
+  it("distinguishes audit-log request errors from a successful empty result", async () => {
+    const requests = new Map([["", createDeferred<UserListResponse>()]]);
+    const loadAuditLogs = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("Audit service unavailable"))
+      .mockResolvedValueOnce({ success: true, data: [] })
+      .mockResolvedValueOnce({
+        success: true,
+        data: [
+          {
+            _id: "audit-1",
+            timestamp: "2026-11-11T12:00:00.000Z",
+            userId: "admin-1",
+            username: "admin",
+            email: "admin@example.test",
+            role: "admin",
+            method: "GET",
+            path: "/api/v1/users/stats",
+            statusCode: 200,
+            durationMs: 12,
+            ipAddress: "127.0.0.1",
+            query: {},
+            params: {},
+            body: {},
+          },
+        ],
+      });
+    await mountDashboard(requests, { loadAuditLogs });
+
+    fireEvent.click(screen.getByRole("button", { name: "Audit logs" }));
+    expect(await screen.findByText("Audit service unavailable")).toBeInTheDocument();
+    expect(screen.queryByText("No audit logs available.")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry loading audit logs" }));
+    expect(await screen.findByText("No audit logs available.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+    expect(await screen.findByText("/api/v1/users/stats")).toBeInTheDocument();
   });
 });
