@@ -36,7 +36,7 @@ const findUserByResetToken = async (token, now = new Date()) =>
 
 const findUsers = async ({ query = {}, skip = 0, limit = 20, sort = { createdAt: -1 } }) => {
   const [items, totalItems] = await Promise.all([
-    User.find(query).select("-password -verificationToken -verificationTokenExpires -resetPasswordToken -resetPasswordExpires").sort(sort).skip(skip).limit(limit),
+    User.find(query).select("-password -verificationToken -verificationTokenExpires -resetPasswordToken -resetPasswordExpires -policyConsents").sort(sort).skip(skip).limit(limit),
     User.countDocuments(query),
   ]);
 

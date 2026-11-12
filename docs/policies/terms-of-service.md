@@ -12,7 +12,7 @@ SNPL PORT provides accounts, public project and portfolio-style posts, community
 
 ## Eligibility and accounts
 
-The planned product rule is that an account may be created only by someone aged 16 or older. Do not create an account for a younger person. The service does not collect a date of birth or provide parental consent for children. The operator must confirm that this threshold is appropriate in every jurisdiction where the service is offered.
+New registrations require an attestation that the user is at least 16. Do not create an account for a younger person. The service does not collect a date of birth or provide parental consent for children; existing accounts are not prompted to reconfirm age by this change. The operator must confirm that this threshold is appropriate in every jurisdiction where the service is offered.
 
 Provide accurate registration information, verify the registered email address, and keep account credentials private. You are responsible for activity performed through your account, subject to applicable law.
 

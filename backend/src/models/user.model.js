@@ -1,6 +1,18 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
 
+const policyConsentSchema = new Schema(
+    {
+        termsVersion: { type: String, required: true },
+        termsAcceptedAt: { type: Date, required: true },
+        privacyVersion: { type: String, required: true },
+        privacyAcknowledgedAt: { type: Date, required: true },
+        minimumAge: { type: Number, enum: [16], required: true },
+        ageConfirmedAt: { type: Date, required: true },
+    },
+    { _id: false },
+);
+
 //model for the user, with username, password, email, verified and verificationToken fields
 const userSchema = new Schema(
     {
@@ -37,6 +49,10 @@ const userSchema = new Schema(
         suspended: {
             type: Boolean,
             default: false,
+        },
+        policyConsents: {
+            type: policyConsentSchema,
+            default: undefined,
         },
         verificationToken: {
             type: String,
