@@ -1,8 +1,10 @@
 # Refund policy
 
-**Status:** current-product statement; review before adding payments
+**Status:** implementation-grounded draft; not applicable to current in-app flows
 **Version:** 1.0
 **Last reviewed:** 2026-11-12
+
+> This statement is based on the current codebase, is not legal advice, and must be replaced with jurisdiction-specific terms before accepting payments.
 
 ## Current payment status
 
