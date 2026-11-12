@@ -40,6 +40,16 @@ describe("AuthView", () => {
     expect(container.querySelector(".auth-panel-icon img")).toBeInTheDocument();
     expect(screen.queryByText(/a home for the next generation/i)).toBeNull();
     expect(screen.queryByText(/01 \/ create/i)).toBeNull();
+    expect(
+      Array.from(container.querySelectorAll("img")).every((image) =>
+        image.hasAttribute("alt"),
+      ),
+    ).toBe(true);
+    expect(
+      Array.from(container.querySelectorAll("img.brand-logo")).every(
+        (image) => image.getAttribute("alt") === "",
+      ),
+    ).toBe(true);
   });
 
   it("switches to signup fields when signup mode is selected", async () => {
