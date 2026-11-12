@@ -2,21 +2,19 @@
 
 SNPLPORT is a full-stack community platform built with React, TypeScript, Node.js, Express, and MongoDB. It allows users to register, verify their email, sign in, create and discover community projects, share upcoming events, manage profiles, and interact with an admin moderation dashboard.
 
-This project was built by Owethu Jezile as a full-stack learning and portfolio application that combines authentication, real-world API design, email workflows, and a polished frontend experience.
+This project was built by Owethu Jezile as a full-stack learning and portfolio application with account authentication, API endpoints, and email workflows.
 
 ## Overview
 
 SNPLPORT brings together three core experiences:
 
-- A secure authentication system for users
+- Email-verified accounts with JWT-based sessions
 - A community feed for projects and portfolio-style posts
 - An event-sharing experience for community updates and happenings
 
-The app is designed to feel modern and responsive while keeping the backend organized and scalable.
-
 ## Key Features
 
-### Authentication and Account Security
+### Authentication
 
 - User registration with validation
 - Email verification flow
