@@ -14,14 +14,6 @@ const sessionSchema = new Schema(
       unique: true,
       index: true,
     },
-    userAgent: {
-      type: String,
-      default: "",
-    },
-    ipAddress: {
-      type: String,
-      default: "",
-    },
     expiresAt: {
       type: Date,
       required: true,
