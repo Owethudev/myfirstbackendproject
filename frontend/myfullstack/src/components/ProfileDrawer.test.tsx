@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { ProfileDrawer } from "./ProfileDrawer";
 
@@ -11,6 +12,7 @@ const createProps = (role: "user" | "admin") => ({
   },
   isOpen: true,
   activeFeed: "projects" as const,
+  triggerRef: { current: null },
   postForm: { name: "", description: "", portfolio: "" },
   eventForm: { name: "", location: "", theme: "", time: "" },
   message: "",
@@ -77,5 +79,43 @@ describe("ProfileDrawer content", () => {
     expect(
       screen.queryByRole("button", { name: "Close profile drawer" }),
     ).toBeNull();
+  });
+
+  it("traps keyboard focus, closes with Escape, and restores focus to its trigger", async () => {
+    const DrawerHarness = () => {
+      const triggerRef = useRef<HTMLButtonElement>(null);
+      const [isOpen, setIsOpen] = useState(true);
+      const props = createProps("user");
+
+      return (
+        <>
+          <button type="button" ref={triggerRef}>
+            Open profile
+          </button>
+          <ProfileDrawer
+            {...props}
+            isOpen={isOpen}
+            triggerRef={triggerRef}
+            onClose={() => setIsOpen(false)}
+          />
+        </>
+      );
+    };
+
+    render(<DrawerHarness />);
+    const closeButton = screen.getByRole("button", {
+      name: "Close profile drawer",
+    });
+    await waitFor(() => expect(closeButton).toHaveFocus());
+
+    screen.getByRole("button", { name: "Log out everywhere" }).focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(closeButton).toHaveFocus();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(screen.getByRole("button", { name: "Open profile" })).toHaveFocus();
+    });
   });
 });
