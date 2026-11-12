@@ -18,6 +18,7 @@ import {
 } from "react-router-dom";
 import "./App.css";
 import { AuthView } from "./components/AuthView.tsx";
+import { CookieConsentBanner } from "./components/CookieConsentBanner.tsx";
 import { EventFeed } from "./components/EventFeed.tsx";
 import { Feed } from "./components/Feed.tsx";
 import { ForgotPasswordPage } from "./components/ForgotPasswordPage.tsx";
@@ -400,6 +401,7 @@ function AppShell() {
           setLocalMessage("");
         }}
       />
+      <CookieConsentBanner />
 
       <main
         className="app-main"
