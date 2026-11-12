@@ -5,6 +5,7 @@ import {
   lazy,
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { ArrowUp } from "lucide-react";
@@ -85,6 +86,7 @@ function AppShell() {
   const [postForm, setPostForm] = useState<PostForm>(EMPTY_POST_FORM);
   const [eventForm, setEventForm] = useState<EventForm>(EMPTY_EVENT_FORM);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuTriggerRef = useRef<HTMLButtonElement>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -97,6 +99,8 @@ function AppShell() {
     "projects",
   );
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const openProfileMenu = useCallback(() => setIsProfileMenuOpen(true), []);
+  const closeProfileMenu = useCallback(() => setIsProfileMenuOpen(false), []);
 
   useSessionTimeout(Boolean(user && token), () => {
     signOut("Your session has expired. Please log in again.");
@@ -384,12 +388,17 @@ function AppShell() {
 
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">
+        Skip to main content
+      </a>
       <Header
         user={user}
         isGuest={isGuest}
         searchScope={searchScope}
         searchTerm={searchTerm}
         isSearchOpen={isSearchOpen}
+        isProfileMenuOpen={isProfileMenuOpen}
+        profileMenuTriggerRef={profileMenuTriggerRef}
         onSearchScopeChange={(scope) => {
           setSearchScope(scope);
           setActiveFeed(scope);
@@ -398,7 +407,7 @@ function AppShell() {
         }}
         onSearchTermChange={setSearchTerm}
         onToggleSearch={() => setIsSearchOpen((value) => !value)}
-        onOpenProfile={() => setIsProfileMenuOpen(true)}
+        onOpenProfile={openProfileMenu}
         onLeaveGuest={() => {
           setIsGuest(false);
           setIsSearchOpen(false);
@@ -409,6 +418,8 @@ function AppShell() {
 
       <main
         className="app-main"
+        id="main-content"
+        tabIndex={-1}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -453,11 +464,12 @@ function AppShell() {
               <ProfileDrawer
                 user={user}
                 isOpen={isProfileMenuOpen}
+                triggerRef={profileMenuTriggerRef}
                 activeFeed={activeFeed}
                 postForm={postForm}
                 eventForm={eventForm}
                 message={message || localMessage || getSessionMessage()}
-                onClose={() => setIsProfileMenuOpen(false)}
+                onClose={closeProfileMenu}
                 onPostFormChange={setPostForm}
                 onEventFormChange={setEventForm}
                 onPostSubmit={handlePostSubmit}

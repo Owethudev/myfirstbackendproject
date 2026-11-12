@@ -1,4 +1,11 @@
-import { type FormEvent, type Dispatch, type SetStateAction } from "react";
+import {
+  type Dispatch,
+  type FormEvent,
+  type RefObject,
+  type SetStateAction,
+  useEffect,
+  useRef,
+} from "react";
 import { motion } from "framer-motion";
 import { LogOut, Send, X } from "lucide-react";
 import type { EventForm, PostForm, UserProfile } from "../types.ts";
@@ -10,6 +17,7 @@ type ProfileDrawerProps = {
   postForm: PostForm;
   eventForm: EventForm;
   message: string;
+  triggerRef: RefObject<HTMLButtonElement | null>;
   onClose: () => void;
   onPostFormChange: Dispatch<SetStateAction<PostForm>>;
   onEventFormChange: Dispatch<SetStateAction<EventForm>>;
@@ -26,6 +34,7 @@ export function ProfileDrawer({
   postForm,
   eventForm,
   message,
+  triggerRef,
   onClose,
   onPostFormChange,
   onEventFormChange,
@@ -36,6 +45,56 @@ export function ProfileDrawer({
 }: ProfileDrawerProps) {
   const showProjectCard = activeFeed === "projects";
   const showEventCard = activeFeed === "events";
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const triggerElement = triggerRef.current;
+    closeButtonRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+      const drawer = document.getElementById("profile-drawer");
+      if (!drawer) return;
+
+      const focusableElements = Array.from(
+        drawer.querySelectorAll<HTMLElement>(
+          'a[href], button:not(:disabled), input:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => !element.hasAttribute("inert"));
+      if (focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      if (
+        event.shiftKey &&
+        (document.activeElement === firstElement ||
+          !drawer.contains(document.activeElement))
+      ) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (
+        !event.shiftKey &&
+        (document.activeElement === lastElement ||
+          !drawer.contains(document.activeElement))
+      ) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      triggerElement?.focus();
+    };
+  }, [isOpen, onClose, triggerRef]);
 
   return (
     <>
@@ -44,6 +103,7 @@ export function ProfileDrawer({
         animate={{ x: isOpen ? 0 : "-110%" }}
         transition={{ type: "spring", stiffness: 280, damping: 32 }}
         className="profile-drawer"
+        id="profile-drawer"
         role="dialog"
         aria-modal={isOpen}
         aria-hidden={!isOpen}
@@ -60,6 +120,7 @@ export function ProfileDrawer({
           <button
             type="button"
             className="profile-drawer-close"
+            ref={closeButtonRef}
             onClick={onClose}
             aria-label="Close profile drawer"
           >

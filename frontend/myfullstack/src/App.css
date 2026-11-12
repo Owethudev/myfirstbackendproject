@@ -41,6 +41,26 @@ body {
   backdrop-filter: blur(20px);
 }
 
+.skip-link {
+  position: fixed;
+  z-index: 60;
+  top: 8px;
+  left: 8px;
+  padding: 10px 14px;
+  border: 1px solid rgba(202, 255, 67, 0.5);
+  border-radius: 9px;
+  color: #17200c;
+  background: #caff43;
+  font-size: 12px;
+  font-weight: 700;
+  transform: translateY(calc(-100% - 12px));
+  transition: transform 160ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 .site-header-inner {
   display: flex;
   width: min(100% - 3rem, 1380px);
