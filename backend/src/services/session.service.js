@@ -8,15 +8,13 @@ import {
   updateSession,
 } from "../repositories/session.repository.js";
 
-const createSession = async ({ userId, userAgent = "", ipAddress = "" }) => {
+const createSession = async ({ userId }) => {
   const expiresAt = new Date(Date.now() + parseExpiryToMilliseconds(process.env.JWT_ACCESS_TOKEN_EXPIRY || "30m"));
   const sessionId = uuidv4();
 
   return createSessionRepository({
     userId,
     sessionId,
-    userAgent,
-    ipAddress,
     expiresAt,
     active: true,
   });

@@ -120,7 +120,7 @@ const loginUser = async ({ email, password }) => {
     return createError(403, "Account suspended.");
   }
 
-  const session = await createSession({ userId: user._id, userAgent: "", ipAddress: "" });
+  const session = await createSession({ userId: user._id });
   const token = signAccessToken(user, session.sessionId);
 
   return createResult(200, {
