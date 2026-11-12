@@ -36,3 +36,46 @@ describe("ProfileDrawer account deletion access", () => {
     expect(screen.queryByRole("button", { name: "Delete profile" })).toBeNull();
   });
 });
+
+describe("ProfileDrawer content", () => {
+  it("shows an accessible project composer in the app's dark profile drawer", () => {
+    render(<ProfileDrawer {...createProps("user")} />);
+
+    expect(screen.getByRole("dialog", { name: "user" })).toHaveClass(
+      "profile-drawer",
+    );
+    expect(
+      screen.getByRole("heading", { name: "Share your project" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Project title")).toBeInTheDocument();
+    expect(screen.getByLabelText("Description")).toBeInTheDocument();
+    expect(screen.getByLabelText("Portfolio link")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /publish project/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the event composer when the events feed is active", () => {
+    render(<ProfileDrawer {...createProps("user")} activeFeed="events" />);
+
+    expect(
+      screen.getByRole("heading", { name: "Create an event" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Event name")).toBeInTheDocument();
+    expect(screen.getByLabelText("Location")).toBeInTheDocument();
+    expect(screen.getByLabelText("Theme")).toBeInTheDocument();
+    expect(screen.getByLabelText("Event time")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Share your project" }),
+    ).toBeNull();
+  });
+
+  it("hides and disables the drawer when it is closed", () => {
+    render(<ProfileDrawer {...createProps("user")} isOpen={false} />);
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Close profile drawer" }),
+    ).toBeNull();
+  });
+});
