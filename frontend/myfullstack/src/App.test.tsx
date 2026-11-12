@@ -67,6 +67,17 @@ describe("AuthView", () => {
     fireEvent.click(screen.getByRole("button", { name: "Sign up" }));
 
     expect(await screen.findByLabelText(/username/i)).toBeInTheDocument();
+    const ageConsent = screen.getByLabelText(
+      /confirm that I am at least 16 years old/i,
+    );
+    const termsConsent = screen.getByLabelText(/agree to the Terms of Service/i);
+    const privacyConsent = screen.getByLabelText(/read the Privacy Policy/i);
+    expect(ageConsent).toBeRequired();
+    expect(ageConsent).not.toBeChecked();
+    expect(termsConsent).toBeRequired();
+    expect(termsConsent).not.toBeChecked();
+    expect(privacyConsent).toBeRequired();
+    expect(privacyConsent).not.toBeChecked();
     expect(await screen.findByText(/come on in/i)).toBeInTheDocument();
     expect(await screen.findByTestId("orbital-scene")).toBeInTheDocument();
   });

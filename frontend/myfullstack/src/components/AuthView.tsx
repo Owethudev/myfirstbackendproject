@@ -198,6 +198,46 @@ export function AuthView({
               </div>
             </label>
 
+            {mode === "signup" ? (
+              <div className="auth-consents">
+                <label className="auth-consent">
+                  <input type="checkbox" name="ageConfirmed" required />
+                  <span>
+                    I confirm that I am at least 16 years old. Accounts for
+                    younger users are not available.
+                  </span>
+                </label>
+                <label className="auth-consent">
+                  <input type="checkbox" name="termsAccepted" required />
+                  <span>
+                    I agree to the{" "}
+                    <a
+                      href="https://github.com/Owethudev/myfirstbackendproject/blob/main/docs/policies/terms-of-service.md"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Terms of Service
+                    </a>
+                    .
+                  </span>
+                </label>
+                <label className="auth-consent">
+                  <input type="checkbox" name="privacyAccepted" required />
+                  <span>
+                    I have read the{" "}
+                    <a
+                      href="https://github.com/Owethudev/myfirstbackendproject/blob/main/docs/policies/privacy-policy.md"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Privacy Policy
+                    </a>
+                    .
+                  </span>
+                </label>
+              </div>
+            ) : null}
+
             <button
               type="submit"
               disabled={loading}

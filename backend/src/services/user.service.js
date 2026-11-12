@@ -16,6 +16,9 @@ import {
 } from "../repositories/user.repository.js";
 
 const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+const TERMS_VERSION = "1.0";
+const PRIVACY_VERSION = "1.0";
+const MINIMUM_ACCOUNT_AGE = 16;
 
 const buildVerificationTokenExpiry = (now = new Date()) =>
   new Date(now.getTime() + VERIFICATION_TOKEN_TTL_MS);
@@ -32,11 +35,19 @@ const validateRequiredFields = (fields, payload) => {
 };
 
 const registerUser = async (
-  { username, email, password },
+  { username, email, password, termsAccepted, privacyAccepted, ageConfirmed },
   sendVerification = sendVerificationEmail,
 ) => {
   const inputValidation = validateRequiredFields({ username, email, password }, { username, email, password });
   if (inputValidation) return inputValidation;
+
+  if (termsAccepted !== true || privacyAccepted !== true) {
+    return createError(400, "Please accept the Terms of Service and acknowledge the Privacy Policy.");
+  }
+
+  if (ageConfirmed !== true) {
+    return createError(400, `You must confirm you are at least ${MINIMUM_ACCOUNT_AGE} years old to create an account.`);
+  }
 
   const normalizedEmail = normalizeEmail(email);
   const existing = await findUserByEmail(normalizedEmail);
@@ -45,6 +56,7 @@ const registerUser = async (
   }
 
   const verificationToken = uuidv4();
+  const consentedAt = new Date();
   const user = await createUser({
     username,
     email: normalizedEmail,
@@ -52,6 +64,14 @@ const registerUser = async (
     verified: false,
     verificationToken,
     verificationTokenExpires: buildVerificationTokenExpiry(),
+    policyConsents: {
+      termsVersion: TERMS_VERSION,
+      termsAcceptedAt: consentedAt,
+      privacyVersion: PRIVACY_VERSION,
+      privacyAcknowledgedAt: consentedAt,
+      minimumAge: MINIMUM_ACCOUNT_AGE,
+      ageConfirmedAt: consentedAt,
+    },
   });
 
   const baseUrl = process.env.BACKEND_URL || process.env.VITE_API_BASE_URL || "https://snpl-port.onrender.com";

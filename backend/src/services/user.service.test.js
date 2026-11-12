@@ -41,6 +41,9 @@ test("registration deletes the newly created account when verification email del
         username: "new-member",
         email: "New.Member@example.test",
         password: "password123",
+        ageConfirmed: true,
+        termsAccepted: true,
+        privacyAccepted: true,
       },
       async () => {
         throw new Error("Email provider unavailable");
@@ -57,6 +60,108 @@ test("registration deletes the newly created account when verification email del
     User.findOne = originalFindOne;
     User.create = originalCreate;
     User.findOneAndDelete = originalFindOneAndDelete;
+  }
+});
+
+test("registration requires explicit terms and privacy acknowledgements", async () => {
+  const originalFindOne = User.findOne;
+  const originalCreate = User.create;
+  let createCalled = false;
+  User.findOne = async () => null;
+  User.create = async () => {
+    createCalled = true;
+    return {};
+  };
+
+  try {
+    const result = await registerUser({
+      username: "new-member",
+      email: "new.member@example.test",
+      password: "password123",
+      ageConfirmed: true,
+      termsAccepted: true,
+      privacyAccepted: false,
+    });
+
+    assert.equal(result.statusCode, 400);
+    assert.match(result.payload.message, /Terms of Service.*Privacy Policy/i);
+    assert.equal(createCalled, false);
+  } finally {
+    User.findOne = originalFindOne;
+    User.create = originalCreate;
+  }
+});
+
+test("registration blocks accounts without minimum-age confirmation", async () => {
+  const originalFindOne = User.findOne;
+  const originalCreate = User.create;
+  let lookupCalled = false;
+  let createCalled = false;
+  User.findOne = async () => {
+    lookupCalled = true;
+    return null;
+  };
+  User.create = async () => {
+    createCalled = true;
+    return {};
+  };
+
+  try {
+    const result = await registerUser({
+      username: "new-member",
+      email: "new.member@example.test",
+      password: "password123",
+      ageConfirmed: false,
+      termsAccepted: true,
+      privacyAccepted: true,
+    });
+
+    assert.equal(result.statusCode, 400);
+    assert.match(result.payload.message, /at least 16 years old/i);
+    assert.equal(lookupCalled, false);
+    assert.equal(createCalled, false);
+  } finally {
+    User.findOne = originalFindOne;
+    User.create = originalCreate;
+  }
+});
+
+test("registration stores versions and timestamps for required policy acknowledgements", async () => {
+  const originalFindOne = User.findOne;
+  const originalCreate = User.create;
+  let createdPayload;
+  User.findOne = async () => null;
+  User.create = async (payload) => {
+    createdPayload = payload;
+    return { _id: "new-user-1", ...payload };
+  };
+
+  try {
+    const result = await registerUser(
+      {
+        username: "new-member",
+        email: "new.member@example.test",
+        password: "password123",
+        ageConfirmed: true,
+        termsAccepted: true,
+        privacyAccepted: true,
+      },
+      async () => {},
+    );
+
+    assert.equal(result.statusCode, 201);
+    assert.equal(createdPayload.policyConsents.termsVersion, "1.0");
+    assert.equal(createdPayload.policyConsents.privacyVersion, "1.0");
+    assert.ok(createdPayload.policyConsents.termsAcceptedAt instanceof Date);
+    assert.equal(createdPayload.policyConsents.minimumAge, 16);
+    assert.ok(createdPayload.policyConsents.ageConfirmedAt instanceof Date);
+    assert.equal(
+      createdPayload.policyConsents.termsAcceptedAt,
+      createdPayload.policyConsents.privacyAcknowledgedAt,
+    );
+  } finally {
+    User.findOne = originalFindOne;
+    User.create = originalCreate;
   }
 });
 

@@ -152,6 +152,7 @@ function AppShell() {
     event.preventDefault();
     setLoading(true);
     setMessage("");
+    const formData = new FormData(event.currentTarget);
 
     const endpoint =
       mode === "login"
@@ -164,6 +165,9 @@ function AppShell() {
             username: form.username,
             email: form.email,
             password: form.password,
+            ageConfirmed: formData.get("ageConfirmed") === "on",
+            termsAccepted: formData.get("termsAccepted") === "on",
+            privacyAccepted: formData.get("privacyAccepted") === "on",
           };
 
     try {
