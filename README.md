@@ -8,15 +8,13 @@ This project was built by Owethu Jezile as a full-stack learning and portfolio a
 
 SNPLPORT brings together three core experiences:
 
-- A secure authentication system for users
+- Email-verified accounts with JWT-based sessions
 - A community feed for projects and portfolio-style posts
 - An event-sharing experience for community updates and happenings
 
-The app is designed to feel modern and responsive while keeping the backend organized and scalable.
-
 ## Key Features
 
-### Authentication and Account Security
+### Authentication
 
 - User registration with validation
 - Email verification flow

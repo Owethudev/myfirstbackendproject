@@ -270,7 +270,9 @@ export function AuthView({
             Browse as a guest <ArrowUpRight size={15} />
           </button>
         </div>
-        <p className="auth-legal">By continuing, you agree to create with respect and give others room to grow.</p>
+        <p className="auth-legal">
+          SNPL PORT currently offers no paid checkout or subscriptions.
+        </p>
       </motion.section>
     </div>
   );

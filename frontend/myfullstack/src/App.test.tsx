@@ -33,6 +33,10 @@ describe("AuthView", () => {
     expect(screen.getByText(/sign in/i)).toBeInTheDocument();
     expect(screen.getByText(/welcome back/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /browse as a guest/i })).toBeInTheDocument();
+    expect(
+      screen.getByText(/currently offers no paid checkout or subscriptions/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/by continuing, you agree/i)).toBeNull();
     expect(container.querySelector(".auth-panel-icon img")).toBeInTheDocument();
     expect(screen.queryByText(/a home for the next generation/i)).toBeNull();
     expect(screen.queryByText(/01 \/ create/i)).toBeNull();
