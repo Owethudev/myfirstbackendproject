@@ -6,6 +6,7 @@ import {
   findEventPosts,
 } from "../repositories/eventpost.repository.js";
 import { canManageContent, getContentAuthor } from "./contentOwnership.js";
+import { cacheService, getPublicFeedCacheTtlSeconds } from "./cache.service.js";
 
 const parsePagination = (query = {}) => {
   const page = query.page ?? "1";
@@ -34,6 +35,7 @@ const createEventPost = async (principal, { name, location, theme, time }) => {
     time,
     author,
   });
+  await cacheService.invalidate("public-events");
 
   return createResult(201, {
     message: "Event created successfully",
@@ -43,7 +45,12 @@ const createEventPost = async (principal, { name, location, theme, time }) => {
 
 const getEventPosts = async (query = {}) => {
   const { parsedPage, parsedLimit, skip } = parsePagination(query);
-  const result = await findEventPosts({ skip, limit: parsedLimit });
+  const result = await cacheService.getOrLoad(
+    "public-events",
+    `page:${parsedPage}:limit:${parsedLimit}`,
+    getPublicFeedCacheTtlSeconds(),
+    () => findEventPosts({ skip, limit: parsedLimit }),
+  );
   const totalPages = Math.max(Math.ceil(result.totalItems / parsedLimit), 1);
 
   return createResult(200, {
@@ -66,6 +73,7 @@ const deleteEventPost = async (id, principal) => {
   }
 
   await deleteEventPostById(id);
+  await cacheService.invalidate("public-events");
 
   return createResult(200, { message: "Event deleted successfully" });
 };

@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import connectDB from "./config/database.js";
+import { initializeCache } from "./services/cache.service.js";
 import app from "./app.js";
 
 // Get the current file path so we can resolve the backend .env file reliably.
@@ -67,6 +68,7 @@ const startServer = async () => {
 
     try {
         await connectDB(); // This connects the server to the database.
+        await initializeCache();
 
         const preferredPort = Number(process.env.PORT || 8000);
         server = await listenWithPortFallback(preferredPort);

@@ -45,4 +45,7 @@ const postSchema = new Schema(
     }
 );
 
+postSchema.index({ createdAt: -1 });
+postSchema.index({ reported: 1, createdAt: -1 });
+
 export const Post = mongoose.model("Post", postSchema);

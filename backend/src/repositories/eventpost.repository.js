@@ -4,7 +4,7 @@ const createEventPost = async (payload) => EventPost.create(payload);
 
 const findEventPosts = async ({ query = {}, skip = 0, limit = 12 }) => {
   const [items, totalItems] = await Promise.all([
-    EventPost.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    EventPost.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
     EventPost.countDocuments(query),
   ]);
 
