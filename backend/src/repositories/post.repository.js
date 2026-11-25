@@ -4,7 +4,7 @@ const createPost = async (payload) => Post.create(payload);
 
 const findPosts = async ({ query, skip, limit, sort = { createdAt: -1 } }) => {
   const [items, totalItems] = await Promise.all([
-    Post.find(query).sort(sort).skip(skip).limit(limit),
+    Post.find(query).sort(sort).skip(skip).limit(limit).lean(),
     Post.countDocuments(query),
   ]);
 

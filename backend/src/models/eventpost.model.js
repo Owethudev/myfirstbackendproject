@@ -38,4 +38,6 @@ const eventPostSchema = new Schema(
 	},
 );
 
+eventPostSchema.index({ createdAt: -1 });
+
 export const EventPost = mongoose.model("EventPost", eventPostSchema);

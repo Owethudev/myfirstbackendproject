@@ -121,9 +121,17 @@ BACKEND_URL=http://localhost:8000
 FRONTEND_URL=http://localhost:5173
 API_MAIL_KEY=your_mail_provider_api_key
 EMAIL_FROM="SNPLPORT <no-reply@example.com>"
+REDIS_URL=redis://localhost:6379
+PUBLIC_FEED_CACHE_TTL_SECONDS=60
 ```
 
 > If your mail provider is not configured, the app will still run, but email delivery features may be limited.
+
+Redis is optional. When `REDIS_URL` is unset or Redis is unavailable, the API reads directly from MongoDB. Configure Redis credentials only through environment variables or your deployment secret manager. The public post and event feeds are cached for 60 seconds by default; `PUBLIC_FEED_CACHE_TTL_SECONDS` accepts values from 1 to 3600 seconds.
+
+Feed cache keys are versioned separately for posts and events. Successful post create, update, delete, and moderation operations invalidate the post feed; event create and delete operations invalidate the event feed. Cache entries contain only public feed data, never session, account, or authorization information.
+
+The feed models declare indexes for newest-first post and event listings and reported-post listings. Apply and verify these indexes through the deployment's normal MongoDB index migration process before rollout; this change does not connect to or modify a production database.
 
 ## Installation
 

@@ -13,6 +13,7 @@ import {
   pickPostContentUpdates,
 } from "./contentOwnership.js";
 import { buildPostReviewUpdates } from "./postModeration.js";
+import { cacheService, getPublicFeedCacheTtlSeconds } from "./cache.service.js";
 
 const parsePagination = (query) => {
   const page = query?.page ?? "1";
@@ -40,6 +41,7 @@ const createPost = async (principal, { name, description, portfolio }) => {
     portfolio,
     author,
   });
+  await cacheService.invalidate("public-posts");
 
   return createResult(201, {
     message: "Post created successfully",
@@ -49,11 +51,17 @@ const createPost = async (principal, { name, description, portfolio }) => {
 
 const getPosts = async (query = {}) => {
   const { parsedPage, parsedLimit, skip } = parsePagination(query);
-  const result = await findPosts({
-    query: { moderationStatus: { $ne: "removed" } },
-    skip,
-    limit: parsedLimit,
-  });
+  const result = await cacheService.getOrLoad(
+    "public-posts",
+    `page:${parsedPage}:limit:${parsedLimit}`,
+    getPublicFeedCacheTtlSeconds(),
+    () =>
+      findPosts({
+        query: { moderationStatus: { $ne: "removed" } },
+        skip,
+        limit: parsedLimit,
+      }),
+  );
 
   const totalPages = Math.max(Math.ceil(result.totalItems / parsedLimit), 1);
 
@@ -98,6 +106,7 @@ const reviewPost = async (id, payload = {}) => {
 
   Object.assign(post, review.updates);
   await savePost(post);
+  await cacheService.invalidate("public-posts");
 
   return createResult(200, {
     message: "Post review updated",
@@ -124,6 +133,7 @@ const updatePost = async (id, principal, payload = {}) => {
   if (!post) {
     return createError(404, "Post not found");
   }
+  await cacheService.invalidate("public-posts");
 
   return createResult(200, {
     message: "Post updated successfully",
@@ -142,6 +152,7 @@ const deletePost = async (id, principal) => {
   }
 
   await deletePostById(id);
+  await cacheService.invalidate("public-posts");
 
   return createResult(200, { message: "Post deleted successfully" });
 };
@@ -155,6 +166,7 @@ const adminDeletePost = async (id) => {
   post.moderationStatus = "removed";
   post.reported = true;
   await savePost(post);
+  await cacheService.invalidate("public-posts");
 
   return createResult(200, { message: "Post removed by admin" });
 };
