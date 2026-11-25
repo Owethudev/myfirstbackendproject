@@ -120,6 +120,35 @@ describe("AuthView", () => {
 
     expect(onContinueAsGuest).toHaveBeenCalledOnce();
   });
+
+  it("pauses the community marquee while it has keyboard focus", async () => {
+    const onPauseChange = vi.fn();
+
+    render(
+      <MemoryRouter>
+        <AuthView
+          mode="login"
+          form={{ username: "", email: "", password: "" }}
+          message=""
+          loading={false}
+          isPaused={false}
+          onModeChange={() => {}}
+          onFormChange={() => {}}
+          onSubmit={() => {}}
+          onPauseChange={onPauseChange}
+          onContinueAsGuest={() => {}}
+        />
+      </MemoryRouter>,
+    );
+
+    const marquee = await screen.findByRole("region", {
+      name: "Community members",
+    });
+    fireEvent.focus(marquee);
+    expect(onPauseChange).toHaveBeenLastCalledWith(true);
+    fireEvent.blur(marquee);
+    expect(onPauseChange).toHaveBeenLastCalledWith(false);
+  });
 });
 
 describe("guest feed access", () => {

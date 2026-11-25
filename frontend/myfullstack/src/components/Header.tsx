@@ -1,3 +1,4 @@
+import type { RefObject } from "react";
 import { Menu, Search } from "lucide-react";
 import logo from "../assets/logo.png";
 import type { UserProfile } from "../types.ts";
@@ -8,6 +9,8 @@ type HeaderProps = {
   searchScope: "projects" | "events";
   searchTerm: string;
   isSearchOpen: boolean;
+  isProfileMenuOpen: boolean;
+  profileMenuTriggerRef: RefObject<HTMLButtonElement | null>;
   onSearchScopeChange: (scope: "projects" | "events") => void;
   onSearchTermChange: (value: string) => void;
   onToggleSearch: () => void;
@@ -21,6 +24,8 @@ export function Header({
   searchScope,
   searchTerm,
   isSearchOpen,
+  isProfileMenuOpen,
+  profileMenuTriggerRef,
   onSearchScopeChange,
   onSearchTermChange,
   onToggleSearch,
@@ -53,12 +58,14 @@ export function Header({
                 className="header-search-toggle"
                 onClick={onToggleSearch}
                 aria-label="Toggle search"
+                aria-expanded={isSearchOpen}
+                aria-controls="header-search-panel"
               >
                 <Search size={16} />
                 <span>Search</span>
               </button>
               {isSearchOpen ? (
-                <div className="header-search">
+                <div className="header-search" id="header-search-panel">
                   <div className="search-scopes">
                     <button
                       type="button"
@@ -91,8 +98,11 @@ export function Header({
                 <button
                   type="button"
                   className="header-icon-button"
+                  ref={profileMenuTriggerRef}
                   onClick={onOpenProfile}
                   aria-label="Open profile menu"
+                  aria-expanded={isProfileMenuOpen}
+                  aria-controls="profile-drawer"
                 >
                   <Menu size={20} />
                 </button>

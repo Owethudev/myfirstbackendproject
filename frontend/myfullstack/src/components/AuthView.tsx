@@ -82,14 +82,23 @@ export function AuthView({
           </div>
           <div
             className="conveyor-track"
+            role="region"
+            aria-label="Community members"
+            tabIndex={0}
             onMouseEnter={() => onPauseChange(true)}
             onMouseLeave={() => onPauseChange(false)}
             onTouchStart={() => onPauseChange(true)}
             onTouchEnd={() => onPauseChange(false)}
+            onFocus={() => onPauseChange(true)}
+            onBlur={() => onPauseChange(false)}
             style={{ animationPlayState: isPaused ? "paused" : "running" }}
           >
             {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((name, index) => (
-              <span key={`${name}-${index}`} className="community-pill">
+              <span
+                key={`${name}-${index}`}
+                className="community-pill"
+                aria-hidden={index >= MARQUEE_ITEMS.length}
+              >
                 <img className="brand-logo" src={logo} alt="" /> {name}
               </span>
             ))}
