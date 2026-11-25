@@ -48,7 +48,7 @@ Users can sign out to clear local authentication data. Browser storage can also 
 
 ## Children and age eligibility
 
-The planned product rule is that accounts are for people aged 16 or older. The application does not request a date of birth. A self-attestation is not independent age verification and is not a parental-consent process. The operator must review the age threshold and safeguards for each jurisdiction and provide an underage-account reporting and removal process before launch.
+New registrations require an attestation that the user is at least 16. The application does not request a date of birth. A self-attestation is not independent age verification and is not a parental-consent process; existing accounts are not prompted to reconfirm age by this change. The operator must review the age threshold and safeguards for each jurisdiction and provide an underage-account reporting and removal process before launch.
 
 ## Security
 

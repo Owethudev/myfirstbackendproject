@@ -533,6 +533,39 @@ body {
   margin-top: 25px;
 }
 
+.auth-consents {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #dedfd4;
+  border-radius: 11px;
+  background: #e8e9df;
+}
+
+.auth-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: #41483d;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.auth-consent input {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  margin: 1px 0 0;
+  accent-color: #70883b;
+}
+
+.auth-consent a {
+  color: #45572a;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .auth-field {
   display: grid;
   gap: 8px;
