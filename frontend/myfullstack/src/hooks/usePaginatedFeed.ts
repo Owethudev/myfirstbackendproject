@@ -1,12 +1,17 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { buildApiUrl, getApiErrorMessage, parseJsonResponse } from "../api.ts";
 import type { FeedRequestState } from "../types.ts";
+
+const FEED_CACHE_TTL_MS = 2 * 60 * 1000;
+const FEED_CACHE_PREFIX = "snpl:public-feed:v1:";
 
 type PaginatedResponse<T> = {
   currentPage: number;
   hasNextPage: boolean;
   items: T[];
 };
+
+type CachedFeed<T> = PaginatedResponse<T> & { savedAt: number };
 
 const getFailureMessage = (payload: unknown, fallback: string) =>
   getApiErrorMessage(payload, fallback);
@@ -15,14 +20,51 @@ export function usePaginatedFeed<T extends { _id: string }>(
   endpoint: string,
   pageSize: number,
 ) {
-  const [items, setItems] = useState<T[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasNextPage, setHasNextPage] = useState(false);
+  const cacheKey = `${FEED_CACHE_PREFIX}${endpoint}:limit:${pageSize}`;
+  const cachedFeed = (() => {
+    try {
+      const raw = window.sessionStorage.getItem(cacheKey);
+      if (!raw) return null;
+      const cached = JSON.parse(raw) as Partial<CachedFeed<T>>;
+      if (
+        typeof cached.savedAt !== "number" ||
+        !Array.isArray(cached.items) ||
+        cached.currentPage !== 1 ||
+        typeof cached.hasNextPage !== "boolean"
+      ) {
+        window.sessionStorage.removeItem(cacheKey);
+        return null;
+      }
+      return cached as CachedFeed<T>;
+    } catch {
+      return null;
+    }
+  })();
+  const [items, setItems] = useState<T[]>(() => cachedFeed?.items ?? []);
+  const [currentPage, setCurrentPage] = useState(cachedFeed?.currentPage ?? 1);
+  const [hasNextPage, setHasNextPage] = useState(cachedFeed?.hasNextPage ?? false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [requestState, setRequestState] = useState<FeedRequestState>({
-    status: "loading",
-  });
+  const [requestState, setRequestState] = useState<FeedRequestState>(
+    cachedFeed ? { status: "ready" } : { status: "loading" },
+  );
   const requestId = useRef(0);
+  const cachedFeedSavedAt = cachedFeed?.savedAt;
+
+  useEffect(() => {
+    if (cachedFeedSavedAt === undefined) return;
+    const expiryDelay = Math.max(
+      0,
+      cachedFeedSavedAt + FEED_CACHE_TTL_MS - Date.now(),
+    );
+    const expiryTimer = window.setTimeout(() => {
+      try {
+        window.sessionStorage.removeItem(cacheKey);
+      } catch {
+        // Expiry cleanup is best-effort; the live feed refresh remains available.
+      }
+    }, expiryDelay);
+    return () => window.clearTimeout(expiryTimer);
+  }, [cacheKey, cachedFeedSavedAt]);
 
   const loadPage = useCallback(
     async (page = 1, append = false) => {
@@ -64,6 +106,16 @@ export function usePaginatedFeed<T extends { _id: string }>(
         setCurrentPage(data.currentPage);
         setHasNextPage(data.hasNextPage);
         setRequestState({ status: "ready" });
+        if (page === 1) {
+          try {
+            window.sessionStorage.setItem(
+              cacheKey,
+              JSON.stringify({ ...data, savedAt: Date.now() }),
+            );
+          } catch {
+            // Storage can be disabled or full; the live feed still works.
+          }
+        }
       } catch (error) {
         if (currentRequestId !== requestId.current) return;
 
@@ -80,7 +132,7 @@ export function usePaginatedFeed<T extends { _id: string }>(
         }
       }
     },
-    [endpoint, pageSize],
+    [cacheKey, endpoint, pageSize],
   );
 
   const removeItem = useCallback((id: string) => {
