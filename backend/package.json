@@ -26,7 +26,6 @@
     "express-rate-limit": "^8.6.0",
     "jsonwebtoken": "^9.0.1",
     "mongoose": "^9.10.2",
-    "nodemailer": "^9.0.3",
     "redis": "^6.4.0",
     "uuid": "^14.0.1"
   },
