@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { buildApiUrl, getApiErrorMessage, parseJsonResponse } from "../api.ts";
 import type { FeedRequestState } from "../types.ts";
 
@@ -28,7 +28,6 @@ export function usePaginatedFeed<T extends { _id: string }>(
       const cached = JSON.parse(raw) as Partial<CachedFeed<T>>;
       if (
         typeof cached.savedAt !== "number" ||
-        Date.now() - cached.savedAt > FEED_CACHE_TTL_MS ||
         !Array.isArray(cached.items) ||
         cached.currentPage !== 1 ||
         typeof cached.hasNextPage !== "boolean"
@@ -49,6 +48,23 @@ export function usePaginatedFeed<T extends { _id: string }>(
     cachedFeed ? { status: "ready" } : { status: "loading" },
   );
   const requestId = useRef(0);
+  const cachedFeedSavedAt = cachedFeed?.savedAt;
+
+  useEffect(() => {
+    if (cachedFeedSavedAt === undefined) return;
+    const expiryDelay = Math.max(
+      0,
+      cachedFeedSavedAt + FEED_CACHE_TTL_MS - Date.now(),
+    );
+    const expiryTimer = window.setTimeout(() => {
+      try {
+        window.sessionStorage.removeItem(cacheKey);
+      } catch {
+        // Expiry cleanup is best-effort; the live feed refresh remains available.
+      }
+    }, expiryDelay);
+    return () => window.clearTimeout(expiryTimer);
+  }, [cacheKey, cachedFeedSavedAt]);
 
   const loadPage = useCallback(
     async (page = 1, append = false) => {
